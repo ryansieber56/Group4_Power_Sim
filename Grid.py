@@ -61,8 +61,11 @@ class Grid:
         # Check for errors before adding line
         self.error_check_transmission_line(bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance)
 
+        # Add Vbase as the high voltage from the first transformer entered
+        Vbase = self.transformers[list(self.transformers.keys())[0]].v2rated
+
         # Add transmission line to dictionary
-        self.transmissionline[name] = TransmissionLine(name, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance)
+        self.transmissionline[name] = TransmissionLine(name, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance, Vbase)
 
         # Add the buses it is connected to
         self.__add_bus(bus1)
@@ -83,41 +86,48 @@ class Grid:
     def calculate_Ybus(self):
 
         # Create a matrix with all zeros depending on how many buses are in the system of complex variables
-        Ybus = numpy.zeros((len(self.buses_order), len(self.buses_order)), dtype=complex)
+        self.Ybus = numpy.zeros((len(self.buses_order), len(self.buses_order)), dtype=complex)
 
         # Assign Values to each component
 
         # Set Non-diagonals just using -1/Z
-        Ybus[0][1] = -1 / (self.transformers["T1"].Zpur + 1j * self.transformers["T1"].Zpui) # T1
-        Ybus[1][0] = Ybus[0][1] # T1
-        Ybus[1][2] = -1 / (self.transmissionline["L2"].Rpu + 1j * self.transmissionline["L2"].Xpu) # L2
-        Ybus[2][1] = Ybus[1][2] # L2
-        Ybus[3][1] = -1 / (self.transmissionline["L1"].Rpu + 1j * self.transmissionline["L1"].Xpu) # L1
-        Ybus[1][3] = Ybus[3][1] # L1
-        Ybus[4][2] = -1 / (self.transmissionline["L3"].Rpu + 1j * self.transmissionline["L3"].Xpu) # L3
-        Ybus[2][4] = Ybus[4][2] # L3
-        Ybus[4][3] = -1 / (self.transmissionline["L6"].Rpu + 1j * self.transmissionline["L6"].Xpu) # L6
-        Ybus[3][4] = Ybus[4][3] # L6
-        Ybus[5][3] = -1 / (self.transmissionline["L4"].Rpu + 1j * self.transmissionline["L4"].Xpu) # L4
-        Ybus[3][5] = Ybus[5][3] # L4
-        Ybus[5][4] = -1 / (self.transmissionline["L5"].Rpu + 1j * self.transmissionline["L5"].Xpu) # L5
-        Ybus[4][5] = Ybus[5][4] # L5
-        Ybus[6][5] = -1 / (self.transformers["T2"].Zpur + 1j * self.transformers["T2"].Zpui) # T2
-        Ybus[5][6] = Ybus[6][5] # T2
+        self.Ybus[0][1] = -1 / (self.transformers["T1"].Rpu + 1j * self.transformers["T1"].Xpu) # T1
+        self.Ybus[1][0] = self.Ybus[0][1] # T1
+        self.Ybus[1][2] = -1 / (self.transmissionline["L2"].Rpu + 1j * self.transmissionline["L2"].Xpu) # L2
+        self.Ybus[2][1] = self.Ybus[1][2] # L2
+        self.Ybus[3][1] = -1 / (self.transmissionline["L1"].Rpu + 1j * self.transmissionline["L1"].Xpu) # L1
+        self.Ybus[1][3] = self.Ybus[3][1] # L1
+        self.Ybus[4][2] = -1 / (self.transmissionline["L3"].Rpu + 1j * self.transmissionline["L3"].Xpu) # L3
+        self.Ybus[2][4] = self.Ybus[4][2] # L3
+        self.Ybus[4][3] = -1 / (self.transmissionline["L6"].Rpu + 1j * self.transmissionline["L6"].Xpu) # L6
+        self.Ybus[3][4] = self.Ybus[4][3] # L6
+        self.Ybus[5][3] = -1 / (self.transmissionline["L4"].Rpu + 1j * self.transmissionline["L4"].Xpu) # L4
+        self.Ybus[3][5] = self.Ybus[5][3] # L4
+        self.Ybus[5][4] = -1 / (self.transmissionline["L5"].Rpu + 1j * self.transmissionline["L5"].Xpu) # L5
+        self.Ybus[4][5] = self.Ybus[5][4] # L5
+        self.Ybus[6][5] = -1 / (self.transformers["T2"].Rpu + 1j * self.transformers["T2"].Xpu) # T2
+        self.Ybus[5][6] = self.Ybus[6][5] # T2
 
         # Set diagonals, do not include generators, include capacitances here
         # Use previous matrix values plus shunt charging values for necessary transmission lines
-        Ybus[0][0] = -Ybus[0][1]  # G1, T1
-        Ybus[1][1] = -Ybus[0][1] - Ybus[1][3] - Ybus[1][2] + (1j * self.transmissionline["L1"].Bpu / 2) + 1j * self.transmissionline["L2"].Bpu / 2# T1, L1, L2
-        Ybus[2][2] = -Ybus[1][2] - Ybus[2][4] + (1j * self.transmissionline["L2"].Bpu / 2) + 1j * self.transmissionline["L3"].Bpu / 2           # L2, L3
-        Ybus[3][3] = -Ybus[1][3] - Ybus[3][5] - Ybus[3][4] + (1j * self.transmissionline["L1"].Bpu / 2) + 1j * self.transmissionline["L4"].Bpu / 2 + 1j * self.transmissionline["L6"].Bpu / 2  # L1, L4, L6
-        Ybus[4][4] = -Ybus[2][4] - Ybus[4][5] - Ybus[3][4] + (1j * self.transmissionline["L3"].Bpu / 2) + 1j * self.transmissionline["L5"].Bpu / 2 + 1j * self.transmissionline["L6"].Bpu / 2  # L3, L5, L6
-        Ybus[5][5] = -Ybus[3][5] - Ybus[4][5] - Ybus[5][6] + (1j * self.transmissionline["L4"].Bpu / 2) + 1j * self.transmissionline["L5"].Bpu / 2  # L4, L5, T2
-        Ybus[6][6] = -Ybus[5][6]  # G2, T2
+        self.Ybus[0][0] = -self.Ybus[0][1]  # G1, T1
+        self.Ybus[1][1] = -self.Ybus[0][1] - self.Ybus[1][3] - self.Ybus[1][2] + (1j * self.transmissionline["L1"].Bpu / 2) + 1j * self.transmissionline["L2"].Bpu / 2# T1, L1, L2
+        self.Ybus[2][2] = -self.Ybus[1][2] - self.Ybus[2][4] + (1j * self.transmissionline["L2"].Bpu / 2) + 1j * self.transmissionline["L3"].Bpu / 2           # L2, L3
+        self.Ybus[3][3] = -self.Ybus[1][3] - self.Ybus[3][5] - self.Ybus[3][4] + (1j * self.transmissionline["L1"].Bpu / 2) + 1j * self.transmissionline["L4"].Bpu / 2 + 1j * self.transmissionline["L6"].Bpu / 2  # L1, L4, L6
+        self.Ybus[4][4] = -self.Ybus[2][4] - self.Ybus[4][5] - self.Ybus[3][4] + (1j * self.transmissionline["L3"].Bpu / 2) + 1j * self.transmissionline["L5"].Bpu / 2 + 1j * self.transmissionline["L6"].Bpu / 2  # L3, L5, L6
+        self.Ybus[5][5] = -self.Ybus[3][5] - self.Ybus[4][5] - self.Ybus[5][6] + (1j * self.transmissionline["L4"].Bpu / 2) + 1j * self.transmissionline["L5"].Bpu / 2  # L4, L5, T2
+        self.Ybus[6][6] = -self.Ybus[5][6]  # G2, T2
 
         # Print the Y-bus matrix
         print("Y-bus matrix:")
-        print(Ybus)
+        i = 0
+        while i < 7:
+            j = 0
+            print("\nRow " + str(i + 1))
+            while j < 7:
+                print(self.Ybus[i][j])
+                j += 1
+            i = i + 1
 
     # Function to check errors in transmission line
     def error_check_transmission_line(self, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance):
@@ -146,7 +156,7 @@ class Grid:
         if lengthmi <= 0:
             sys.exit("Error: Cannot have a negative or zero transmission line length. Enter a positive value.")
 
-        # If seperation distance is negative, throw an error
+        # If separation distance is negative, throw an error
         if seperationdistance < 0:
             sys.exit("Error: Cannot have a negative bundle separation distance. Enter a positive value.")
 

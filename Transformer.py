@@ -17,9 +17,10 @@ class Transformer:
         self.impedance = impedance
         self.xrratio = xrratio
 
-        # Establish Sbase
+        # Establish Sbase and Vbase
         Sbase = 100  # MVA
+        Vbase = v2rated  # kV
 
         # Calculate Z Real and Z imaginary for the transformer
-        self.Zpur = impedance * (v1rated * v1rated / apparentpowerrating)/(v1rated * v1rated/Sbase) * numpy.cos(numpy.arctan(xrratio))
-        self.Zpui = impedance * (v1rated * v1rated / apparentpowerrating)/(v1rated * v1rated/Sbase) * numpy.sin(numpy.arctan(xrratio))
+        self.Rpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.cos(numpy.arctan(xrratio))
+        self.Xpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.sin(numpy.arctan(xrratio))

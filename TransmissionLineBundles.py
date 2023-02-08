@@ -2,7 +2,7 @@
 # Used to find DSL and DSC given the number of bundles, distance between bundles in feet, and codeword of conductor
 
 class TransmissionLineBundles:
-    def __init__(self, numberofbundles: int, distance: float, codeword: str):
+    def __init__(self, lengthmi: float, numberofbundles: int, distance: float, codeword: str):
 
         # Change distance in feet to inches
         distance = distance * 12
@@ -32,3 +32,6 @@ class TransmissionLineBundles:
         elif numberofbundles == 4:
             self.DSL = (self.GMR * distance ** 3) ** (1 / 4)
             self.DSC = 1.0941 * (self.r * distance ** 3) ** (1 / 4)
+
+        # Calculate R per mile
+        self.R = self.resistanceperft / numberofbundles

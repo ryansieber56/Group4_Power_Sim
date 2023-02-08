@@ -10,10 +10,10 @@ from TransmissionLineBundles import TransmissionLineBundles
 class TransmissionLine:
 
     # By default, transmission line has a name, bus to bus location, length  (miles), coordinates for each phase,
-    # A codeword for the conductor type, number of bundles per phase, seperation of bundles per phase
+    # A codeword for the conductor type, number of bundles per phase, separation of bundles per phase, and voltage base
     def __init__(self, name: str, bus1: str, bus2: str, lengthmi: float,
                  axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float,
-                 codeword: str, numberofbundles: int, seperationdistance: float):
+                 codeword: str, numberofbundles: int, seperationdistance: float, Vbase: float):
 
         # Set name, buses, and length of line
         self.name = name
@@ -21,9 +21,8 @@ class TransmissionLine:
         self.bus2 = bus2
         self.lengthmi = lengthmi
 
-        # Set S base, Vbase, frequency, and calculate Z base
+        # Set S base, frequency, and calculate Z base
         Sbase = 100
-        Vbase = 230
         Zbase = Vbase**2/Sbase
         frequency = 60
 
@@ -34,12 +33,12 @@ class TransmissionLine:
         dequivalent = (Dab * Dbc * Dca) ** (1/3)
 
         # Create a Bundles object that contains the desired values from the TranmissionLineBundles class
-        Bundles = TransmissionLineBundles(numberofbundles, seperationdistance, codeword)
+        Bundles = TransmissionLineBundles(lengthmi, numberofbundles, seperationdistance, codeword)
 
         # Store the variables from that class
         DSL = Bundles.DSL
         DSC = Bundles.DSC
-        R = Bundles.resistanceperft * self.lengthmi * 5280 / numberofbundles # 5280 converts miles to ft
+        Rpermi = Bundles.R
 
         # Calculate Capacitance values
         CFpermi = ((2 * numpy.pi * 8.8541878128 * (10 ** (-12))) / (math.log(dequivalent * 12 / DSC))) * 1609.344 # F/mi
@@ -49,8 +48,11 @@ class TransmissionLine:
         LFpermi = (2 * (10 ** (-7)) * math.log(dequivalent * 12 / DSL)) * 1609.344 # F/mi
         Ltotal = LFpermi * lengthmi # Farads
 
+        # Calculate total resistance of line, 5280 converts length in miles to feet
+        Rtotal = Rpermi * lengthmi * 5280
+
         # Use R to get R per unit
-        self.Rpu = R / Zbase
+        self.Rpu = Rtotal / Zbase
 
         # Use L to get X per unit
         self.Xpu = Ltotal * 2 * numpy.pi * frequency / Zbase
