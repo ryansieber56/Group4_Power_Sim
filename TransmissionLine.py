@@ -9,10 +9,13 @@ from TransmissionLineBundles import TransmissionLineBundles
 
 class TransmissionLine:
 
-    # By default, transmission line has a name, bus to bus location, length in miles, coordinates for each phase, a codeword for the line type, number of bundles per phase, seperation of bundles per phase
-    def __init__(self, name: str, bus1: str, bus2: str, lengthmi: float, axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float, codeword: str, numberofbundles: int, seperationdistance: float):
+    # By default, transmission line has a name, bus to bus location, length  (miles), coordinates for each phase,
+    # A codeword for the conductor type, number of bundles per phase, seperation of bundles per phase
+    def __init__(self, name: str, bus1: str, bus2: str, lengthmi: float,
+                 axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float,
+                 codeword: str, numberofbundles: int, seperationdistance: float):
 
-        # Set name, buses, and length of wire
+        # Set name, buses, and length of line
         self.name = name
         self.bus1 = bus1
         self.bus2 = bus2
@@ -23,8 +26,6 @@ class TransmissionLine:
         Vbase = 230
         Zbase = Vbase**2/Sbase
         frequency = 60
-        # Create local variables that will be used later
-
 
         # Calculate Equivalent Distance between lines (in feet)
         Dab = ((axaxis - bxaxis) ** 2 - (ayaxis - byaxis) ** 2) ** (1/2)

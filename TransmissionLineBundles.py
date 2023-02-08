@@ -13,10 +13,6 @@ class TransmissionLineBundles:
             self.r = 0.321  # in inches
             self.resistanceperft = 0.0779 / 1000  # in Ohms per ft
 
-        # Else when the codeword is not a stored type
-        else:
-            print("Error: Type not accepted. Try another conductor type.")
-
         # If there is 1 bundle, set values
         if numberofbundles == 1:
             self.DSL = self.GMR

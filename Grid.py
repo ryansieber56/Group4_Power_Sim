@@ -39,6 +39,9 @@ class Grid:
     def add_transformer(self, name: str, bus1: str, bus2: str, apparentpower: float,
                         v1rated: float, v2rated: float, impedance: float, xrratio: float):
 
+        # Check for errors before adding transformer
+        self.error_check_transformer(bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio)
+
         # Add transformer to dictionary with all of its values
         self.transformers[name] = Transformer(name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio)
 
@@ -49,23 +52,14 @@ class Grid:
     # Function to add a transmission line to the grid.
     # It takes parameters name, initial bus, final bus, length (miles), line coordinates (ft.(inches/12)),
     # Codeword of wire, number of bundles, and spacing between bundles (ft.(inches/12))
-    # This function will not work if two phases are in the same exact location,
+    # This function will throw an error if two phases are in the same exact location,
     # the number of bundles is not an integer 1-4, or if the codeword entered does not have data stored
     def add_transmissionline(self, name: str, bus1: str, bus2: str, lengthmi: float,
                              axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float,
                              codeword: str, numberofbundles: int, seperationdistance: float):
-        codewordlist = ["Partridge"]
-        # If two phases are in the same location, throw an error
-        if (axaxis == bxaxis and ayaxis == byaxis) or (bxaxis == cxaxis and byaxis == cyaxis) or (axaxis == cxaxis and ayaxis == cyaxis):
-            sys.exit("Error. Phases can not be in the same location. Enter phases at different coordinates.")
 
-        # If number of bundles was less than 1 or more than 4, throw an error
-        if numberofbundles < 1 or numberofbundles > 4:
-            sys.exit("Error. Number of Bundles not accepted. Enter a value 1-4")
-
-        # If codeword does not have data stored, throw an error
-        if codeword not in codewordlist:
-            sys.exit("Error: Codeword not accepted. Enter a different conductor type.")
+        # Check for errors before adding line
+        self.error_check_transmission_line(bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance)
 
         # Add transmission line to dictionary
         self.transmissionline[name] = TransmissionLine(name, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance)
@@ -76,6 +70,9 @@ class Grid:
 
     # Function to add a generator. It takes parameters name, initial bus, and nominal power (MVA).
     def add_generator(self, name, bus1, nominalpower):
+
+        # Check for errors before adding generator
+        self.error_check_generator(nominalpower)
 
         # Add generator to dictionary
         self.generators[name] = Generator(name, bus1, nominalpower)
@@ -121,3 +118,70 @@ class Grid:
         # Print the Y-bus matrix
         print("Y-bus matrix:")
         print(Ybus)
+
+    # Function to check errors in transmission line
+    def error_check_transmission_line(self, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance):
+
+        # List of acceptable codewords
+        codewordlist = ["Partridge"]
+
+        # If two phases are in the same location, throw an error
+        if (axaxis == bxaxis and ayaxis == byaxis) or (bxaxis == cxaxis and byaxis == cyaxis) or (
+                axaxis == cxaxis and ayaxis == cyaxis):
+            sys.exit("Error. Phases can not be in the same location. Enter phases at different coordinates.")
+
+        # If number of bundles was less than 1 or more than 4, throw an error
+        if numberofbundles < 1 or numberofbundles > 4:
+            sys.exit("Error. Number of Bundles not accepted. Enter a value 1-4")
+
+        # If codeword does not have data stored, throw an error
+        if codeword not in codewordlist:
+            sys.exit("Error: Codeword not accepted. Enter a different conductor type.")
+
+        # If transmission line begins and ends at same bus, throw error
+        if bus1 == bus2:
+            sys.exit("Error: Cannot end a transmission line to the same bus it begins. Enter different buses.")
+
+        # If transmission line length is negative or 0, throw an error
+        if lengthmi <= 0:
+            sys.exit("Error: Cannot have a negative or zero transmission line length. Enter a positive value.")
+
+        # If seperation distance is negative, throw an error
+        if seperationdistance < 0:
+            sys.exit("Error: Cannot have a negative bundle separation distance. Enter a positive value.")
+
+    # Function to check errors in generator
+    def error_check_generator(self, nominalpower):
+
+        # If nominal power is negative, throw an error
+        if nominalpower < 0:
+            sys.exit("Error: Cannot have a negative generator power. Enter a positive value.")
+
+    # Function to check errors in generator
+    def error_check_transformer(self, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio):
+
+        # If transmission line begins and ends at same bus, throw error
+        if bus1 == bus2:
+            sys.exit("Error: Cannot end a transformer at the same bus it begins. Enter different buses.")
+
+        # If apparent power is less than zero, throw error
+        if apparentpower < 0:
+            sys.exit("Error: Cannot have a negative apparent power in the transformer. Enter a positive value.")
+
+        # If v1rated is negative, throw an error
+        if v1rated < 0:
+            sys.exit("Error: Cannot have a negative v1 rated voltage. Enter a positive value.")
+
+        # If v2rated is negative, throw an error
+        if v2rated < 0:
+            sys.exit("Error: Cannot have a negative v2 rated voltage. Enter a positive value.")
+
+        # If impedance is negative, throw an error
+        if impedance < 0:
+            sys.exit("Error: Cannot have a negative transformer impedance. Enter a positive value.")
+
+        # If xrratio is negative, throw an error
+        if xrratio < 0:
+            sys.exit("Error: Cannot have a negative transformer xrratio. Enter a positive value.")
+
+
