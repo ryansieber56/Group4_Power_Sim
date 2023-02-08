@@ -2,7 +2,7 @@
 # Used to find DSL and DSC given the number of bundles, distance between bundles in feet, and codeword of conductor
 
 class TransmissionLineBundles:
-    def __init__(self, lengthmi: float, numberofbundles: int, distance: float, codeword: str):
+    def __init__(self, numberofbundles: int, distance: float, codeword: str):
 
         # Change distance in feet to inches
         distance = distance * 12

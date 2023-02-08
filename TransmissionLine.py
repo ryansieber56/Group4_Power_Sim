@@ -33,7 +33,7 @@ class TransmissionLine:
         dequivalent = (Dab * Dbc * Dca) ** (1/3)
 
         # Create a Bundles object that contains the desired values from the TranmissionLineBundles class
-        Bundles = TransmissionLineBundles(lengthmi, numberofbundles, seperationdistance, codeword)
+        Bundles = TransmissionLineBundles(numberofbundles, seperationdistance, codeword)
 
         # Store the variables from that class
         DSL = Bundles.DSL
