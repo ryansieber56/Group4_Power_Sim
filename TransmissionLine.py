@@ -48,8 +48,8 @@ class TransmissionLine:
         LFpermi = (2 * (10 ** (-7)) * math.log(dequivalent * 12 / DSL)) * 1609.344 # F/mi
         Ltotal = LFpermi * lengthmi # Farads
 
-        # Calculate total resistance of line, 5280 converts length in miles to feet
-        Rtotal = Rpermi * lengthmi * 5280
+        # Calculate total resistance of line
+        Rtotal = Rpermi * lengthmi
 
         # Use R to get R per unit
         self.Rpu = Rtotal / Zbase
@@ -59,3 +59,5 @@ class TransmissionLine:
 
         # Use C to get B per unit
         self.Bpu = Ctotal * 2 * numpy.pi * frequency * Zbase
+
+        print(str(self.name) + " RPU ", self.Rpu, " XPU ", self.Xpu, " BPU ", self.Bpu)

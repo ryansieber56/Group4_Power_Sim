@@ -11,7 +11,8 @@ class TransmissionLineBundles:
         if codeword == "Partridge":
             self.GMR = 0.2604  # in inches
             self.r = 0.321  # in inches
-            self.resistanceperft = 0.0779 / 1000  # in Ohms per ft
+            #self.resistanceperft = 0.0779 / 1000  # in Ohms per ft
+            self.resistancepermi = 0.385 # in ohms per mile
 
         # If there is 1 bundle, set values
         if numberofbundles == 1:
@@ -34,4 +35,4 @@ class TransmissionLineBundles:
             self.DSC = 1.0941 * (self.r * distance ** 3) ** (1 / 4)
 
         # Calculate R per mile
-        self.R = self.resistanceperft / numberofbundles
+        self.R = self.resistancepermi / numberofbundles
