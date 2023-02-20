@@ -1,5 +1,6 @@
 # Main File
 from Grid import Grid
+from Power_Flow import PowerFlow
 
 # Create Power Grid
 MainGrid = Grid("MainGrid")
@@ -22,3 +23,7 @@ MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 9.75, 0, 19.5, 0, 
 
 # Calculate and Display Y_bus Matrix
 MainGrid.calculate_Ybus()
+
+# Calculate Power Flow
+PowerFlow(MainGrid)
+

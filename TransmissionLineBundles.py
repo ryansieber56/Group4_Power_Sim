@@ -11,7 +11,6 @@ class TransmissionLineBundles:
         if codeword == "Partridge":
             self.GMR = 0.2604  # in inches
             self.r = 0.321  # in inches
-            #self.resistanceperft = 0.0779 / 1000  # in Ohms per ft
             self.resistancepermi = 0.385 # in ohms per mile
 
         # If there is 1 bundle, set values

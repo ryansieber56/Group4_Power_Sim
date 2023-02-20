@@ -59,5 +59,4 @@ class TransmissionLine:
 
         # Use C to get B per unit
         self.Bpu = Ctotal * 2 * numpy.pi * frequency * Zbase
-
-        print(str(self.name) + " RPU ", self.Rpu, " XPU ", self.Xpu, " BPU ", self.Bpu)
+        #print(self.name, " RPU ",self.Rpu," XPU ", self.Xpu," BPU ", self.Bpu)

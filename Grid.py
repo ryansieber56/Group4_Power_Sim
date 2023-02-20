@@ -9,7 +9,6 @@ from Generator import Generator
 from Transformer import Transformer
 from TransmissionLine import TransmissionLine
 
-
 # Create grid class to contain all buses, generators, transformers, and transmission lines
 class Grid:
 
@@ -119,16 +118,15 @@ class Grid:
         self.Ybus[6][6] = -self.Ybus[5][6]  # G2, T2
 
         # Print the Y-bus matrix
-        print("Y-bus matrix:")
-        i = 0
-        while i < 7:
-            j = 0
-            print("\nRow " + str(i + 1))
-            while j < 7:
-                print(self.Ybus[i][j])
-                j += 1
-            i = i + 1
-
+        #print("Y-bus matrix:")
+        #i = 0
+        #while i < 7:
+        #    j = 0
+        #    print("\nRow " + str(i + 1))
+        #    while j < 7:
+        #        print(self.Ybus[i][j])
+        #        j += 1
+        #    i = i + 1
 
     # Function to check errors in transmission line
     def error_check_transmission_line(self, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance):
