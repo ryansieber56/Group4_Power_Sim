@@ -21,21 +21,20 @@ class PowerFlow:
         # Bus 5: 𝑃_𝐿=100" MW",𝑄_𝐿=65" Mvar"
         # Bus 6: 𝑃_𝐿=0 "MW", 𝑄_𝐿=0" Mvar"
         # Bus 7:𝑃_𝐺=200 "MW", 𝑉=1.0,  𝑃_𝐿=0, 〖 𝑄〗_𝐿=0
-        #P_given[0] = 0
 
         # do not include slack bus
-        P_given[0] = 0
-        P_given[1] = 110
-        P_given[2] = 100
-        P_given[3] = 100
-        P_given[4] = 0
+        P_given[0] = -0
+        P_given[1] = -110
+        P_given[2] = -100
+        P_given[3] = -100
+        P_given[4] = -0
         P_given[5] = 200
-        #Q_given[0] = 0
-        Q_given[0] = 0
-        Q_given[1] = 50
-        Q_given[2] = 70
-        Q_given[3] = 65
-        Q_given[4] = 0
+
+        Q_given[0] = -0
+        Q_given[1] = -50
+        Q_given[2] = -70
+        Q_given[3] = -65
+        Q_given[4] = -0
         Q_given[5] = 0
 
 
@@ -51,13 +50,13 @@ class PowerFlow:
         skipterm = 0
         # calculate mismatch, ignoring the slack bus
         for i in range(len(Grid.buses)):
-            # if slack bus, skip
+            # if slack bus, skip -> using example first bus is slack bus
             if i == 0:
                 i += 1
                 skipterm = 1
                 continue
             for j in range(len(Grid.buses)):
-                # if slack bus, skip
+                # if slack bus, skip -> using example first bus is slack bus
                 if j == 0:
                     j += 1
                     continue
@@ -66,9 +65,10 @@ class PowerFlow:
 
         P_mismatch = P_given - Parr
         Q_mismatch = Q_given - Qarr
-        #P_mismatch = np.delete(P_mismatch, 0, axis = 0)
-        #Q_mismatch = np.delete(Q_mismatch, 0, axis = 0)
-
+        print("P_mismatch")
+        print(P_mismatch)
+        print("Q_mismatch")
+        print(Q_mismatch)
         # Calculate Jacobian Matrix
         i = 0
         j = 0
@@ -80,19 +80,19 @@ class PowerFlow:
 
         skipterm = 0
         while i < len(Grid.buses):
-            # if slack bus skip
+            # if slack bus skip -> using example first bus is slack bus
             if i == 0:
                 skipterm = 1
                 i += 1
                 continue
             while j < (len(Grid.buses)):
-                # if slack bus skip
+                # if slack bus skip -> using example first bus is slack bus
                 if j == 0:
                     j += 1
                     continue
                 if i == j:
                     while z < len(Grid.buses):
-                        # if slack bus skip
+                        # if slack bus skip -> using example first bus is slack bus
                         if z == 0:
                             z += 1
                             continue
@@ -126,6 +126,9 @@ class PowerFlow:
         # here getting rid of bus 7
         J = np.block([[J11, J12], [J21, J22]])
 
+        print("Jacobian Matrix")
+        print(J)
+
         J_temp = np.delete(J, 5, 1)
         J = J_temp
 
@@ -135,17 +138,18 @@ class PowerFlow:
         # calculate change in voltage and phase angle
         J_inv = np.linalg.inv(J)
 
-        # confused here, have J-1 which is 11X11, and the P/Q mismatch which is 12X12
-        # i can get rid of the necessary row in the Q section, then how does the correction work
+        # have J-1 which is 11X11, and the P/Q mismatch which is 1X12, so delete the row of voltage controlled bus
         Q_temp = np.delete(Q_mismatch, 5, 0)
         Q_mismatch = Q_temp
 
+        # combine mismatches
         mismatch = np.concatenate((P_mismatch, Q_mismatch))
         correction = np.dot(J_inv, mismatch)
 
         delta_correction = correction[:6]
         V_correction = correction[6:]
         V_correction = np.concatenate((V_correction[:5], [0], V_correction[5:]), axis=0)
+
         # so last change of V is 0?
         delta += delta_correction
         V += V_correction
