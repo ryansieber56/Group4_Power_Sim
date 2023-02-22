@@ -10,8 +10,8 @@ class PowerFlow:
         self.Qarr = []
 
         # set given values
-        P_given = np.zeros(len(Grid.buses)-1)
-        Q_given = np.zeros(len(Grid.buses)-1)
+        P_given = np.zeros(len(Grid.buses))
+        Q_given = np.zeros(len(Grid.buses))
 
         # TEMPORARY BUS DATA
         # Bus 1: Slack Bus -  𝑉=1.0 pu, 𝛿=0^∘
@@ -23,45 +23,43 @@ class PowerFlow:
         # Bus 7:𝑃_𝐺=200 "MW", 𝑉=1.0,  𝑃_𝐿=0, 〖 𝑄〗_𝐿=0
 
         # do not include slack bus
-        P_given[0] = -0
-        P_given[1] = -110
-        P_given[2] = -100
+        P_given[0] = 0
+        P_given[1] = -0
+        P_given[2] = -110
         P_given[3] = -100
-        P_given[4] = -0
-        P_given[5] = 200
+        P_given[4] = -100
+        P_given[5] = -0
+        P_given[6] = 200
 
         Q_given[0] = -0
-        Q_given[1] = -50
-        Q_given[2] = -70
-        Q_given[3] = -65
-        Q_given[4] = -0
-        Q_given[5] = 0
+        Q_given[1] = -0
+        Q_given[2] = -50
+        Q_given[3] = -70
+        Q_given[4] = -65
+        Q_given[5] = -0
+        Q_given[6] = 0
 
 
 
-        # set intial guess, length of 6 b/c do not include slack bus
-        V = [1.0,1.0,1.0,1.0,1.0,1.0]
-        delta = [0.0,0.0,0.0,0.0,0.0,0.0]
+        # set intial guess
+        V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        delta = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         # establish array for calculated value, without slack bus
-        Parr = np.zeros(len(Grid.buses)-1)
-        Qarr = np.zeros(len(Grid.buses)-1)
+        Parr = np.zeros(len(Grid.buses))
+        Qarr = np.zeros(len(Grid.buses))
 
-        skipterm = 0
         # calculate mismatch, ignoring the slack bus
         for i in range(len(Grid.buses)):
             # if slack bus, skip -> using example first bus is slack bus
-            if i == 0:
-                i += 1
-                skipterm = 1
-                continue
+            #if i == 0:
+            #    continue
+
             for j in range(len(Grid.buses)):
-                # if slack bus, skip -> using example first bus is slack bus
-                if j == 0:
-                    j += 1
-                    continue
-                Parr[i-skipterm] += V[i-skipterm] * V[j-skipterm] * abs(Grid.Ybus[i, j]) * np.cos(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                Qarr[i-skipterm] += V[i-skipterm] * V[j-skipterm] * abs(Grid.Ybus[i, j]) * np.sin(delta[j-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
+                Parr[i] += V[j] * abs(Grid.Ybus[i, j]) * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                Qarr[i] += V[j] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+            Parr[i] = Parr[i] * V[i]
+            Qarr[i] = Parr[i] * V[i]
 
         P_mismatch = P_given - Parr
         Q_mismatch = Q_given - Qarr
@@ -69,6 +67,7 @@ class PowerFlow:
         print(P_mismatch)
         print("Q_mismatch")
         print(Q_mismatch)
+
         # Calculate Jacobian Matrix
         i = 0
         j = 0
@@ -79,61 +78,65 @@ class PowerFlow:
         J22 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
 
         skipterm = 0
-        while i < len(Grid.buses):
+        # SET to check jacobian, i == j is wrong
+        P_mismatch = [0.0, -110, -100, -100, 0, 200]
+        Q_mismatch = [6.46, -41.69, -58, -53, 5.54, 0]
+        for i in range(len(Grid.buses)):
             # if slack bus skip -> using example first bus is slack bus
             if i == 0:
                 skipterm = 1
-                i += 1
                 continue
-            while j < (len(Grid.buses)):
-                # if slack bus skip -> using example first bus is slack bus
-                if j == 0:
-                    j += 1
-                    continue
+            for j in range(len(Grid.buses)):
                 if i == j:
-                    while z < len(Grid.buses):
-                        # if slack bus skip -> using example first bus is slack bus
-                        if z == 0:
-                            z += 1
-                            continue
-
-                        J12[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z-skipterm] * np.cos(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                        J22[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z-skipterm] * np.sin(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
+                    if j == 0:
+                        continue
+                    for z in range(len(Grid.buses)):
+                        J12[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                        J22[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
                         if z == i:
-                            z += 1
                             continue
 
-                        J11[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z-skipterm] * np.sin(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                        J21[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z-skipterm] * np.cos(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                        z += 1
-                    z = 1
-                    J11[i-skipterm, j-skipterm] = J11[i-skipterm, j-skipterm] * -V[i-skipterm]
-                    J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] + (V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
-                    J21[i-skipterm, j-skipterm] = J21[i-skipterm, j-skipterm] * V[i-skipterm]
-                    J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] + -(V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
-                    i += 1
-                    j += 1
+                        J11[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                        J21[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    # Used this before
+                    # J11[i-skipterm, j-skipterm] = J11[i-skipterm, j-skipterm] * -V[i-skipterm]
+                    # J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] + (V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
+                    # J21[i-skipterm, j-skipterm] = J21[i-skipterm, j-skipterm] * V[i-skipterm]
+                    # J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] + -(V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
+
+                    # Fixing negative difference in i == j Jacobian
+                    J11[i-skipterm, j-skipterm] = J11[i-skipterm, j-skipterm] * V[i]
+                    J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] - (V[i] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
+                    J21[i-skipterm, j-skipterm] = -(J21[i-skipterm, j-skipterm] * V[i])
+                    J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] + (V[i] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
+
                 else:
-                    J11[i-skipterm, j-skipterm] = V[i-skipterm] * abs(Grid.Ybus[i, j]) * V[j-skipterm] * np.sin(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                    J12[i-skipterm, j-skipterm] = V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.cos(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                    J21[i-skipterm, j-skipterm] = -V[i-skipterm] * abs(Grid.Ybus[i, j]) * V[j-skipterm] * np.cos(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                    J22[i-skipterm, j-skipterm] = V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.sin(delta[i-skipterm] - delta[j-skipterm] - np.angle(Grid.Ybus[i, j]))
-                    i += 1
-                    j += 1
+                    J11[i-skipterm, j-skipterm] = V[i] * abs(Grid.Ybus[i, j]) * V[j] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    J12[i-skipterm, j-skipterm] = V[i] * abs(Grid.Ybus[i, j]) * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    J21[i-skipterm, j-skipterm] = -V[i] * abs(Grid.Ybus[i, j]) * V[j] * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    J22[i-skipterm, j-skipterm] = V[i] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+
 
         # get rid of row and column for voltage controlled bus, so it is then an 11*11 (-2 cuz of slack,-1 cuz of V.C.B.)
         # here getting rid of bus 7
         J = np.block([[J11, J12], [J21, J22]])
 
+        J_temp = np.delete(J, 11, 1)
+        J = J_temp
+
+        J_temp = np.delete(J, 11, 0)
+        J = J_temp
+
         print("Jacobian Matrix")
-        print(J)
-
-        J_temp = np.delete(J, 5, 1)
-        J = J_temp
-
-        J_temp = np.delete(J, 5, 0)
-        J = J_temp
+        i = 0
+        while i < len(J):
+            j = 0
+            print("\nRow " + str(i + 1))
+            while j < len(J):
+                print(J[i][j])
+                j += 1
+            i = i + 1
 
         # calculate change in voltage and phase angle
         J_inv = np.linalg.inv(J)
@@ -148,9 +151,14 @@ class PowerFlow:
 
         delta_correction = correction[:6]
         V_correction = correction[6:]
-        V_correction = np.concatenate((V_correction[:5], [0], V_correction[5:]), axis=0)
 
-        # so last change of V is 0?
+        # do not update the angle of the slack bus
+        delta_correction = np.concatenate((delta_correction[:0], [1], delta_correction[0:]), axis=0)
+
+        # do not update the voltage of the slack bus or voltage controlled bus
+        V_correction = np.concatenate((V_correction[:6], [0], V_correction[6:]), axis=0)
+        V_correction = np.concatenate((V_correction[:0], [0], V_correction[0:]), axis=0)
+
         delta += delta_correction
         V += V_correction
 
