@@ -22,21 +22,21 @@ class PowerFlow:
         # Bus 6: 𝑃_𝐿=0 "MW", 𝑄_𝐿=0" Mvar"
         # Bus 7:𝑃_𝐺=200 "MW", 𝑉=1.0,  𝑃_𝐿=0, 〖 𝑄〗_𝐿=0
 
-        # do not include slack bus
+        # Set values
         P_given[0] = 0
-        P_given[1] = -0
-        P_given[2] = -110
-        P_given[3] = -100
-        P_given[4] = -100
-        P_given[5] = -0
-        P_given[6] = 200
+        P_given[1] = 0
+        P_given[2] = -1.10
+        P_given[3] = -1.00
+        P_given[4] = -1.00
+        P_given[5] = 0
+        P_given[6] = 2.00
 
-        Q_given[0] = -0
-        Q_given[1] = -0
-        Q_given[2] = -50
-        Q_given[3] = -70
-        Q_given[4] = -65
-        Q_given[5] = -0
+        Q_given[0] = 0
+        Q_given[1] = 0
+        Q_given[2] = -.50
+        Q_given[3] = -.70
+        Q_given[4] = -.65
+        Q_given[5] = 0
         Q_given[6] = 0
 
 
@@ -52,35 +52,36 @@ class PowerFlow:
         # calculate mismatch, ignoring the slack bus
         for i in range(len(Grid.buses)):
             # if slack bus, skip -> using example first bus is slack bus
-            #if i == 0:
-            #    continue
+            if i == 0:
+                continue
 
             for j in range(len(Grid.buses)):
-                Parr[i] += V[j] * abs(Grid.Ybus[i, j]) * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                Qarr[i] += V[j] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-            Parr[i] = Parr[i] * V[i]
-            Qarr[i] = Parr[i] * V[i]
+                Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(np.deg2rad(delta[i]) - np.deg2rad(delta[j]) - np.angle(Grid.Ybus[i, j]))
+                Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(np.deg2rad(delta[i]) - np.deg2rad(delta[j]) - np.angle(Grid.Ybus[i, j]))
 
         P_mismatch = P_given - Parr
+        P_mismatch = P_mismatch[1:7]
         Q_mismatch = Q_given - Qarr
+        Q_mismatch = Q_mismatch[1:7]
+
         print("P_mismatch")
         print(P_mismatch)
         print("Q_mismatch")
         print(Q_mismatch)
 
+        # SET to check jacobian, i == j off be 0.1, 0.2
+        #P_mismatch = [0.0, -110, -100, -100, 0, 200]
+        #Q_mismatch = [6.46, -41.69, -58, -53, 5.54, 0]
+        # Delete Slack Bus
+
         # Calculate Jacobian Matrix
-        i = 0
-        j = 0
-        z = 0
         J11 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
         J12 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
         J21 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
         J22 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
 
         skipterm = 0
-        # SET to check jacobian, i == j is wrong
-        P_mismatch = [0.0, -110, -100, -100, 0, 200]
-        Q_mismatch = [6.46, -41.69, -58, -53, 5.54, 0]
+
         for i in range(len(Grid.buses)):
             # if slack bus skip -> using example first bus is slack bus
             if i == 0:

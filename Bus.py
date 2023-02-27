@@ -17,7 +17,7 @@ class Bus:
 
     # Power Flow Setting Bus Data
     def setbusdata(self, type: str, real_P: float, Q_or_V: float):
-        if type == "Swing Bus":
+        if type == "Slack Bus":
             self.V = 1.0
             self.delta = 0.0
             self.P = 0.0

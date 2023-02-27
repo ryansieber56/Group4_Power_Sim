@@ -24,6 +24,8 @@ MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 19.5, 0, 40, 0, "P
 # Calculate and Display Y_bus Matrix
 MainGrid.calculate_Ybus()
 
+# Set bus types
+
 # Calculate Power Flow
 PowerFlow(MainGrid)
 
