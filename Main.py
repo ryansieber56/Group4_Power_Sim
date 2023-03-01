@@ -25,6 +25,13 @@ MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 19.5, 0, 40, 0, "P
 MainGrid.calculate_Ybus()
 
 # Set bus types
+MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
+MainGrid.setBusData("Bus2", "Load Bus", 0, 0)
+MainGrid.setBusData("Bus3", "Load Bus", 110, 50)
+MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
+MainGrid.setBusData("Bus5", "Load Bus", 100, 65)
+MainGrid.setBusData("Bus6", "Load Bus", 0, 0)
+MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
 
 # Calculate Power Flow
 PowerFlow(MainGrid)

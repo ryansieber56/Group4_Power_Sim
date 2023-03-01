@@ -18,22 +18,25 @@ class Bus:
     # Power Flow Setting Bus Data
     def setbusdata(self, type: str, real_P: float, Q_or_V: float):
         if type == "Slack Bus":
+            self.type = "Slack Bus"
             self.V = 1.0
             self.delta = 0.0
             self.P = 0.0
             self.Q = 0.0
 
         elif type == "Load Bus":
+            self.type = "Load Bus"
             self.V = 0.0
             self.delta = 0.0
             self.P = real_P
             self.Q = Q_or_V
 
         elif type == "Voltage Controlled Bus":
+            self.type = "Voltage Controlled Bus"
             self.V = Q_or_V
             self.delta = 0.0
             self.P = real_P
             self.Q = 0.0
 
         else:
-            print("Type not accepted. Enter Swing Bus, Load Bus, or Voltage Controlled Bus.")
+            print("Type not accepted. Enter Slack Bus, Load Bus, or Voltage Controlled Bus.")

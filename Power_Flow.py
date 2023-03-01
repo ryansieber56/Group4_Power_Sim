@@ -13,33 +13,13 @@ class PowerFlow:
         P_given = np.zeros(len(Grid.buses))
         Q_given = np.zeros(len(Grid.buses))
 
-        # TEMPORARY BUS DATA
-        # Bus 1: Slack Bus -  𝑉=1.0 pu, 𝛿=0^∘
-        # Bus 2: 𝑃_𝐿=0, 𝑄_𝐿=0
-        # Bus 3:𝑃_𝐿=110 "MW", 𝑄_𝐿=50" Mvar"
-        # Bus 4: 𝑃_𝐿=100" MW", 𝑄_𝐿=70" Mvar"
-        # Bus 5: 𝑃_𝐿=100" MW",𝑄_𝐿=65" Mvar"
-        # Bus 6: 𝑃_𝐿=0 "MW", 𝑄_𝐿=0" Mvar"
-        # Bus 7:𝑃_𝐺=200 "MW", 𝑉=1.0,  𝑃_𝐿=0, 〖 𝑄〗_𝐿=0
-
-        # Set values
-        P_given[0] = 0
-        P_given[1] = 0
-        P_given[2] = -1.10
-        P_given[3] = -1.00
-        P_given[4] = -1.00
-        P_given[5] = 0
-        P_given[6] = 2.00
-
-        Q_given[0] = 0
-        Q_given[1] = 0
-        Q_given[2] = -.50
-        Q_given[3] = -.70
-        Q_given[4] = -.65
-        Q_given[5] = 0
-        Q_given[6] = 0
-
-
+        for i in range(len(Grid.buses)):
+            if Grid.buses["Bus" + str(i+1)].type == "Load Bus":
+                P_given[i] = -Grid.buses["Bus" + str(i+1)].P / 100
+                Q_given[i] = -Grid.buses["Bus" + str(i+1)].Q / 100
+            else:
+                P_given[i] = Grid.buses["Bus" + str(i+1)].P / 100
+                Q_given[i] = Grid.buses["Bus" + str(i+1)].Q / 100
 
         # set intial guess
         # delta will be in radians, and if not it needs to be converted to radians during calcualtions
@@ -65,16 +45,6 @@ class PowerFlow:
         P_mismatch = P_mismatch[1:7]
         Q_mismatch = Q_given - Qarr
         Q_mismatch = Q_mismatch[1:7]
-
-        print("P_mismatch")
-        print(P_mismatch)
-        print("Q_mismatch")
-        print(Q_mismatch)
-
-        # SET to check jacobian, i == j off be 0.1, 0.2
-        #P_mismatch = [0.0, -110, -100, -100, 0, 200]
-        #Q_mismatch = [6.46, -41.69, -58, -53, 5.54, 0]
-        # Delete Slack Bus
 
         # Calculate Jacobian Matrix
         J11 = np.zeros((len(Grid.buses) - 1, len(Grid.buses) - 1))
@@ -158,8 +128,8 @@ class PowerFlow:
         delta += delta_correction
         V += V_correction
 
-        print("Delta Updated Data")
-        print(delta)
-        print("V Updated Data")
-        print(V)
+        #print("Delta Updated Data")
+        #print(delta)
+        #print("V Updated Data")
+        #print(V)
 
