@@ -42,6 +42,8 @@ class PowerFlow:
 
 
         # set intial guess
+        # delta will be in radians, and if not it needs to be converted to radians during calcualtions
+        # because cos and sin take radians as arguments, and np.angle will return the Ybus angle in radians
         V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         delta = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -56,8 +58,8 @@ class PowerFlow:
                 continue
 
             for j in range(len(Grid.buses)):
-                Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(np.deg2rad(delta[i]) - np.deg2rad(delta[j]) - np.angle(Grid.Ybus[i, j]))
-                Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(np.deg2rad(delta[i]) - np.deg2rad(delta[j]) - np.angle(Grid.Ybus[i, j]))
+                Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
         P_mismatch = P_given - Parr
         P_mismatch = P_mismatch[1:7]
@@ -89,28 +91,21 @@ class PowerFlow:
                 continue
             for j in range(len(Grid.buses)):
                 if i == j:
-                    if j == 0:
-                        continue
                     for z in range(len(Grid.buses)):
-                        J12[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                        J22[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                        J12[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[z] - np.angle(Grid.Ybus[i, z]))
+                        J22[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[z] - np.angle(Grid.Ybus[i, z]))
 
                         if z == i:
                             continue
 
-                        J11[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                        J21[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                    # Used this before
-                    # J11[i-skipterm, j-skipterm] = J11[i-skipterm, j-skipterm] * -V[i-skipterm]
-                    # J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] + (V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
-                    # J21[i-skipterm, j-skipterm] = J21[i-skipterm, j-skipterm] * V[i-skipterm]
-                    # J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] + -(V[i-skipterm] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
+                        J11[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.sin(delta[i] - delta[z] - np.angle(Grid.Ybus[i, z]))
+                        J21[i-skipterm, j-skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(delta[i] - delta[z] - np.angle(Grid.Ybus[i, z]))
 
                     # Fixing negative difference in i == j Jacobian
-                    J11[i-skipterm, j-skipterm] = J11[i-skipterm, j-skipterm] * V[i]
-                    J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] - (V[i] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
-                    J21[i-skipterm, j-skipterm] = -(J21[i-skipterm, j-skipterm] * V[i])
-                    J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] + (V[i] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
+                    J11[i-skipterm, j-skipterm] = -J11[i-skipterm, j-skipterm] * V[i]
+                    J12[i-skipterm, j-skipterm] = J12[i-skipterm, j-skipterm] + (V[i] * abs(Grid.Ybus[i, j]) * np.cos(np.angle(Grid.Ybus[i, j])))
+                    J21[i-skipterm, j-skipterm] = (J21[i-skipterm, j-skipterm] * V[i])
+                    J22[i-skipterm, j-skipterm] = J22[i-skipterm, j-skipterm] - (V[i] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
 
                 else:
                     J11[i-skipterm, j-skipterm] = V[i] * abs(Grid.Ybus[i, j]) * V[j] * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
@@ -167,25 +162,4 @@ class PowerFlow:
         print(delta)
         print("V Updated Data")
         print(V)
-
-
-#Milestone 2: Produce Power Flow Input Data, Jacobian, and Injection Equations
-#Students will be given loading and generator setpoint data
-#Students will write up all power flow input data which should include line data, transformer data, and bus data
-#Students will write a computer program which calculates the first four steps of the Newton-Raphson power flow program for a flat start for one iteration
-#Calculate power mismatch
-#Calculate Jacobian matrix
-#Calculate voltage and phase mismatches
-#Compute voltage and phase angle for next iteration
-
-#Bus Data:
-#Bus 1: Slack Bus -  𝑉=1.0 pu, 𝛿=0^∘
-#Bus 2: 𝑃_𝐿=0, 𝑄_𝐿=0
-#Bus 3:𝑃_𝐿=110 "MW", 𝑄_𝐿=50" Mvar"
-#Bus 4: 𝑃_𝐿=100" MW", 𝑄_𝐿=70" Mvar"
-#Bus 5: 𝑃_𝐿=100" MW",𝑄_𝐿=65" Mvar"
-#Bus 6: 𝑃_𝐿=0 "MW", 𝑄_𝐿=0" Mvar"
-#Bus 7:𝑃_𝐺=200 "MW", 𝑉=1.0,  𝑃_𝐿=0, 〖 𝑄〗_𝐿=0
-
-
 

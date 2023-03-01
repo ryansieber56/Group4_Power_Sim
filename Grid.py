@@ -128,8 +128,9 @@ class Grid:
             #  j += 1
             #i = i + 1
 
-    #def specify_bus(self, type:str,  ):
-    #`self.Bus.setbusdata(self, type: str, real_P: float, Q_or_V: float):
+   # def specify_bus(self, name:str, type:str,  real_P:float, Q_or_V:float)
+   #     self.Bus.setbusdata(self, type, real_P, Q_or_V):
+   #     self.buses[name] = name
 
 
     # Function to check errors in transmission line
