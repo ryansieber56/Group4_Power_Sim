@@ -128,9 +128,13 @@ class Grid:
             #  j += 1
             #i = i + 1
 
+    # Store bus data from main
     def setBusData(self, bus: str, bustype: str,  real_P: float, Q_or_V: float):
         self.buses[bus].setbusdata(bustype, real_P, Q_or_V)
 
+    # Store power loss calculated from Power Flow class
+    def store_power_loss(self, name: str, powerloss):
+        self.transmissionline[name].store_power_loss(powerloss)
     # Function to check errors in transmission line
     def error_check_transmission_line(self, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance):
 

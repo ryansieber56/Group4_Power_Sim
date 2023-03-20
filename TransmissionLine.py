@@ -20,7 +20,7 @@ class TransmissionLine:
         self.bus1 = bus1
         self.bus2 = bus2
         self.lengthmi = lengthmi
-
+        self.numberofbundles = numberofbundles
         # Set S base, frequency, and calculate Z base
         Sbase = 100
         Zbase = Vbase**2/Sbase
@@ -49,14 +49,16 @@ class TransmissionLine:
         Ltotal = LFpermi * lengthmi # Farads
 
         # Calculate total resistance of line
-        Rtotal = Rpermi * lengthmi
+        self.Rtotal = Rpermi * lengthmi
 
         # Use R to get R per unit
-        self.Rpu = Rtotal / Zbase
+        self.Rpu = self.Rtotal / Zbase
 
         # Use L to get X per unit
         self.Xpu = Ltotal * 2 * numpy.pi * frequency / Zbase
 
         # Use C to get B per unit
         self.Bpu = Ctotal * 2 * numpy.pi * frequency * Zbase
-        #print(self.name, " RPU ",self.Rpu," XPU ", self.Xpu," BPU ", self.Bpu)
+
+    def store_power_loss(self, powerloss):
+        self.powerloss = powerloss
