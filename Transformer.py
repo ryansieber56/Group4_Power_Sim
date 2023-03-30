@@ -16,7 +16,7 @@ class Transformer:
         self.v2rated = v2rated
         self.impedance = impedance
         self.xrratio = xrratio
-
+        self.powerloss = 0
         # Establish Sbase and Vbase
         Sbase = 100  # MVA
         Vbase = v2rated  # kV
@@ -25,3 +25,6 @@ class Transformer:
         self.Rpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.cos(numpy.arctan(xrratio))
         self.Xpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.sin(numpy.arctan(xrratio))
         #print(self.name, " Rpu ", self.Rpu, " XPU ", self.Xpu)
+
+    def store_power_loss(self, powerloss):
+        self.powerloss = powerloss

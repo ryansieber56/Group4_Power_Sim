@@ -135,6 +135,10 @@ class Grid:
     # Store power loss calculated from Power Flow class
     def store_power_loss(self, name: str, powerloss):
         self.transmissionline[name].store_power_loss(powerloss)
+
+    def store_power_loss_transformer(self, name:str, powerloss):
+        self.transformers[name].store_power_loss(powerloss)
+
     # Function to check errors in transmission line
     def error_check_transmission_line(self, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance):
 
