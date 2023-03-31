@@ -1,10 +1,11 @@
 # Main File
 # Need help with:
-#   P and Q injections into slack and PV bus, and checking VAR limit, Capacitor bank? for Newton Rhapson Power Flow File
+#   Capacitor bank? for Newton Rhapson Power Flow File
 #   DC Power Flow Solver - Calculate slack P?, Is there a VAR limit ChecK?
-#   Fast Decoupled, is ther VAR limit too?
+#   Fast Decoupled, is there VAR limit too?
 # To Do:
-#   Add VAR Limit capability in Newton Rhapson Power FLow
+#   VAR Limit capability in Newton Rhapson Power FLow -> Added but untested
+#   Currently working through functionality of switching the slack bus
 
 
 from Grid import Grid
@@ -33,13 +34,16 @@ MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 19.5, 0, 39, 0, "P
 MainGrid.calculate_Ybus()
 
 # Set bus types
-MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
+#MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
+MainGrid.setBusData("Bus7", "Slack Bus", 0, 0)
+
 MainGrid.setBusData("Bus2", "Load Bus", 0, 0)
 MainGrid.setBusData("Bus3", "Load Bus", 110, 50)
 MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
 MainGrid.setBusData("Bus5", "Load Bus", 100, 65)
 MainGrid.setBusData("Bus6", "Load Bus", 0, 0)
-MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
+#MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
+MainGrid.setBusData("Bus1", "Voltage Controlled Bus", 200, 1)
 
 # Calculate Power Flow
 NewtonRhapson(MainGrid)
