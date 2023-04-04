@@ -1,16 +1,13 @@
 # Main File
 # Need help with:
-#   Capacitor bank? for Newton Rhapson Power Flow File
-#   DC Power Flow Solver - Calculate slack P?, Is there a VAR limit ChecK?
-#   Fast Decoupled, is there VAR limit too?
+#   DC Power Flow Solver - Can't get DC Power Flow Correct  -> Ybus exact same, Bbus exact same for what it should be
 # To Do:
-#   VAR Limit capability in Newton Rhapson Power FLow -> Added but untested
-#   Currently working through functionality of switching the slack bus
 
 
 from Grid import Grid
 from Newton_Raphson_Power_Flow import NewtonRhapson
 from DC_Power_Flow_Solver import DCPowerFlow
+from Fast_Decoupled_Solver import FastDecoupled
 # Create Power Grid
 MainGrid = Grid("MainGrid")
 
@@ -34,17 +31,20 @@ MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 19.5, 0, 39, 0, "P
 MainGrid.calculate_Ybus()
 
 # Set bus types
-#MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
-MainGrid.setBusData("Bus7", "Slack Bus", 0, 0)
+MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
+#MainGrid.setBusData("Bus7", "Slack Bus", 0, 0)
 
 MainGrid.setBusData("Bus2", "Load Bus", 0, 0)
 MainGrid.setBusData("Bus3", "Load Bus", 110, 50)
-MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
+#MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
+MainGrid.setBusData("Bus4", "Load Bus", 100, 200)
+
 MainGrid.setBusData("Bus5", "Load Bus", 100, 65)
 MainGrid.setBusData("Bus6", "Load Bus", 0, 0)
-#MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
-MainGrid.setBusData("Bus1", "Voltage Controlled Bus", 200, 1)
+MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
+#MainGrid.setBusData("Bus1", "Voltage Controlled Bus", 200, 1)
 
 # Calculate Power Flow
-NewtonRhapson(MainGrid)
-#DCPowerFlow(MainGrid)
+#NewtonRhapson(MainGrid)
+DCPowerFlow(MainGrid) # should have no losses
+#FastDecoupled(MainGrid)

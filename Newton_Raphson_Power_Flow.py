@@ -9,13 +9,14 @@ class NewtonRhapson:
 
     # Power flow
     def __init__(self, Grid):
+        self.add_cap = 1  # 1 for add cap to lower generator MVAR, 0 for solve exceeded limit
         self.length = len(Grid.buses)
         self.P_loss = np.zeros((self.length, self.length))
         self.system_loss = 0
         self.P_inj_slack = 0
         self.Q_inj_slack = 0
         self.Q_inj_PV = 0
-        self.Q_k_limit = 175000000
+        self.Q_k_limit = Grid.Q_k_limit # In units of VA
         self.Q_limit_passed = 0
         self.S_values = np.zeros((self.length, self.length), dtype=complex)
         self.Q_values = np.zeros((self.length, self.length))
@@ -25,17 +26,18 @@ class NewtonRhapson:
         self.Parr = []
         self.Qarr = []
         self.convergencemet = 0
-        self.convergencevalue = 0.0001
+        self.B = 0
+        self.convergencevalue = Grid.convergencevalue
         self.Vbase = Grid.transformers[list(Grid.transformers.keys())[0]].v2rated * 1000  # In Volts
-        self.number_of_bundles = Grid.transmissionline[
-            list(Grid.transmissionline.keys())[0]].numberofbundles  # Obtain number of bundles
-        self.Sbase = 100000000  # VA
-        self.Vbase_slack1 = 20000
-        self.Vbase_slack2 = 18000
+        self.Sbase = Grid.Sbase * 1000000  # VA
+        self.Vbase_slack1 = Grid.transformers[list(Grid.transformers.keys())[0]].v1rated * 1000  # In Volts
+        self.Vbase_slack2 = Grid.transformers[list(Grid.transformers.keys())[1]].v1rated * 1000  # In Volts
+
         # set blank array for given values
         P_given = np.zeros(self.length)
         Q_given = np.zeros(self.length)
-
+        P_mismatch = np.zeros(self.length-1)
+        Q_mismatch = np.zeros(self.length-2)
         # find slack bus
         self.slack_bus = None
         for i in range(self.length):
@@ -53,6 +55,7 @@ class NewtonRhapson:
                 P_given[i] = Grid.buses["Bus" + str(i + 1)].P / 100
                 Q_given[i] = Grid.buses["Bus" + str(i + 1)].Q / 100
 
+        self.Q_given = Q_given
         # set intial guess
         V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         delta = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -61,7 +64,8 @@ class NewtonRhapson:
         Parr = np.zeros(self.length)
         Qarr = np.zeros(self.length)
         iteration = 1
-        while self.convergencemet == 0 and iteration < 30:
+        self.capacitor_bank_adjustment = 0
+        while (self.convergencemet == 0 and self.capacitor_bank_adjustment == 1) or iteration < 30:
 
             for i in range(self.length):
                 Parr[i] = 0
@@ -82,15 +86,12 @@ class NewtonRhapson:
                         delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
             # P does not include slack bus
-            P_mismatch = P_given - Parr
             if self.slack_bus == 0:
-                P_mismatch = P_mismatch[1:7]
+                P_mismatch = P_given[1:] - Parr[1:]
+                Q_mismatch = Q_given[1:6] - Qarr[1:6]
             if self.slack_bus == 6:
-                P_mismatch = P_mismatch[0:6]
-
-            # Q not include slack bus or VCB
-            Q_mismatch = Q_given - Qarr
-            Q_mismatch = Q_mismatch[1:6]
+                P_mismatch = P_given[0:6] - Parr[0:6]
+                Q_mismatch = Q_given[1:6] - Qarr[1:6]
 
             self.convergencemet = 1
 
@@ -101,7 +102,7 @@ class NewtonRhapson:
                     self.convergencemet = 0
                     break
 
-            if self.convergencemet == 1:
+            if self.convergencemet == 1 and self.capacitor_bank_adjustment == 0:
                 print("It converged after iteration ", iteration - 1)
                 break
 
@@ -110,16 +111,14 @@ class NewtonRhapson:
             J12 = np.zeros((self.length - 1, self.length - 1))
             J21 = np.zeros((self.length - 1, self.length - 1))
             J22 = np.zeros((self.length - 1, self.length - 1))
-
             skipterm = 0
-
             for i in range(self.length):
                 # if slack bus skip
                 if i == self.slack_bus:
                     skipterm = 1
                     continue
                 for j in range(self.length):
-                    if skipterm == 0 and j == self.slack_bus:
+                    if j == self.slack_bus:
                         continue
                     if i == j:
                         for z in range(self.length):
@@ -166,9 +165,9 @@ class NewtonRhapson:
 
             # Here VCB is 1
             if self.slack_bus == 6:
-                J_temp = np.delete(J, 5, 1)
+                J_temp = np.delete(J, 6, 1)
                 J = J_temp
-                J_temp = np.delete(J, 5, 0)
+                J_temp = np.delete(J, 6, 0)
                 J = J_temp
 
             # calculate change in voltage and phase angle
@@ -198,13 +197,23 @@ class NewtonRhapson:
                 self.Q_k += abs(Grid.Ybus[self.voltage_controlled_bus, i]) * V[i] * np.sin(delta[self.voltage_controlled_bus] - delta[i] - np.angle(Grid.Ybus[self.voltage_controlled_bus,i]))
             self.Q_k *= V[self.voltage_controlled_bus]
             self.Q_k *= self.Sbase
-            if self.Q_k > self.Q_k_limit:
-                print("EXCEEDED")
+            # Just testing other slack bus first
+            if self.Q_k > self.Q_k_limit and self.add_cap == 0:
+                print("LIMIT EXCEEDED, SWITCHING TO LOAD")
                 self.solve_exceeded_var_power_flow(Grid)
                 self.Q_limit_passed = 1
                 break
-
-        print("SETUP V_Complex")
+            self.capacitor_bank_adjustment = 0
+            if self.Q_k > self.Q_k_limit and self.add_cap == 1:
+                self.capacitor_bank_adjustment = 1
+                # Add capacitor bank to highest MVAR load
+                j = 0
+                for i in range(self.length):
+                    if self.Q_given[j] >= self.Q_given[i]:
+                        j = i
+                Grid.Ybus[j, j] += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
+                self.B += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
+                iteration = 0
         # Check to make sure V_complex was not set up by Var limit solver
         if self.Q_limit_passed == 0:
             # Calculate the complex voltage
@@ -213,6 +222,8 @@ class NewtonRhapson:
             # print("V_complex for bus", i+1, ":", V_complex[i])
             # Print Values used -> double-checked and all voltages and angles are correct
             # print(i, " V ", V[i], "delta[i]", delta[i])
+        #print(np.imag(self.B)*100)
+
         self.solve_power_flow(Grid)
 
     def solve_power_flow(self, Grid):
@@ -227,10 +238,7 @@ class NewtonRhapson:
 
         # Calculate actual current values
         self.I_values = (self.Sbase / (self.Vbase * np.sqrt(3))) * I_values_per_unit
-        if self.slack_bus == 0:
-            self.I_values[0, 1] *= self.Vbase / self.Vbase_slack1 # -> Because different bases for slack bus
-        if self.slack_bus == 6:
-            self.I_values[5, 6] *= self.Vbase / self.Vbase_slack2 # -> Because different bases for slack bus
+        self.I_values[0, 1] *= self.Vbase / self.Vbase_slack1 # -> Because from Bus1 to 2
 
         # Check ampacity limit
         self.check_ampacity()
@@ -243,10 +251,11 @@ class NewtonRhapson:
         for i in range(self.length):
             for j in range(self.length):
                 self.S_values[i, j] = self.V_complex[i] * I_conjugate[i, j] * np.sqrt(3)  # because 3 phase
-                if self.slack_bus == 0 and i == 0:
+                #if self.slack_bus == 0 and i == 0:
+                if i==0:
                     self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack1
-                if self.slack_bus == 6 and i == 6:
-                    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
+                #if self.slack_bus == 6 and i == 6:
+                #    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
 
         self.P_values = np.real(self.S_values)
         self.Q_values = np.imag(self.S_values)
@@ -270,10 +279,12 @@ class NewtonRhapson:
                         if abs(self.I_values[i1, i2]) == 0:
                             continue
                         powerloss = abs(self.I_values[i1, i2]) ** 2 * value.Rpu * self.Vbase ** 2/self.Sbase * 3 # because 3 phase
-                        if(self.slack_bus == 0 and value.name == "T1"):
-                            powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack1 ** 2
-                        if(self.slack_bus == 6 and value.name == "T2"):
-                            powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack2 ** 2
+                        #if(self.slack_bus == 0 and value.name == "T1"):
+                         #   powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack1 ** 2
+                        if value.name == "T1":
+                            powerloss = powerloss / (self.Vbase ** 2) * self.Vbase_slack1 ** 2
+                        #if(self.slack_bus == 6 and value.name == "T2"):
+                        #    powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack2 ** 2
                         Grid.store_power_loss_transformer(i, powerloss)
                         self.system_loss += powerloss
 
@@ -333,7 +344,8 @@ class NewtonRhapson:
         # set blank array for given values
         P_given = np.zeros(self.length)
         Q_given = np.zeros(self.length)
-
+        P_mismatch = np.zeros(self.length-1)
+        Q_mismatch = np.zeros(self.length-1)
         # find slack bus
         for i in range(self.length):
             if Grid.buses["Bus" + str(i + 1)].type == "Slack Bus":
@@ -349,8 +361,7 @@ class NewtonRhapson:
             else:
                 P_given[i] = Grid.buses["Bus" + str(i + 1)].P / 100
                 Q_given[i] = Grid.buses["Bus" + str(i + 1)].Q / 100
-        Q_given[self.voltage_controlled_bus] = 175000000 #self.Q_k_limit
-        # Set
+        Q_given[self.voltage_controlled_bus] = self.Q_k_limit / self.Sbase
 
         # set intial guess
         V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -375,22 +386,18 @@ class NewtonRhapson:
                 for j in range(self.length):
                     Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(
                         delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                    if i == self.voltage_controlled_bus:
-                        continue
                     Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(
                         delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
-            # P or Q does not include slack bus
-            P_mismatch = P_given - Parr
-            Q_mismatch = Q_given - Qarr
+            # P does not include slack bus
             if self.slack_bus == 0:
-                P_mismatch = P_mismatch[1:7]
-                Q_mismatch = Q_mismatch[1:7]
-
+                P_mismatch = P_given[1:7] - Parr[1:7]
+                Q_mismatch = Q_given[1:7] - Qarr[1:7]
             if self.slack_bus == 6:
-                P_mismatch = P_mismatch[0:6]
-                Q_mismatch = Q_mismatch[0:6]
-
+                P_mismatch = P_given[0:6] - Parr[0:6]
+                Q_mismatch = Q_given[0:6] - Qarr[0:6]
+            #print("P_mismatch", P_mismatch)
+            #print("Q_mismatch", Q_mismatch)
             self.convergencemet = 1
 
             # Check Power Mismatch for Convergence
@@ -418,6 +425,8 @@ class NewtonRhapson:
                     skipterm = 1
                     continue
                 for j in range(self.length):
+                    if j == self.slack_bus:
+                        continue
                     if i == j:
                         for z in range(self.length):
                             J12[i - skipterm, j - skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(
@@ -501,7 +510,7 @@ class NewtonRhapson:
                     continue
                 if self.I_values[i][j] >= 475:
                     print("Error: Ampacity limit exceeded")
-                    exit(-1)
+                    #exit(-1)
                 j += 1
             j = 0
             i += 1

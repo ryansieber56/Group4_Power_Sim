@@ -27,6 +27,12 @@ class Grid:
         self.transformers: Dict[str, Transformer] = dict()
         self.transmissionline: Dict[str, TransmissionLine] = dict()
 
+        # Parameters for all Files
+        self.Sbase = 100 # In units of MVA
+        self.Vbase = 230 # In units of kV
+        self.convergencevalue = 0.0001 #pu
+        self.Q_k_limit = 175000000 #VA
+
     # Function to add a bus, by first making sure the bus does not already exist
     def __add_bus(self, bus):
         if bus not in self.buses.keys():
@@ -42,7 +48,7 @@ class Grid:
         self.error_check_transformer(bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio)
 
         # Add transformer to dictionary with all of its values
-        self.transformers[name] = Transformer(name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio)
+        self.transformers[name] = Transformer(name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio, self.Sbase)
 
         # Add the buses it is connected to
         self.__add_bus(bus1)
@@ -64,7 +70,7 @@ class Grid:
         Vbase = self.transformers[list(self.transformers.keys())[0]].v2rated
 
         # Add transmission line to dictionary
-        self.transmissionline[name] = TransmissionLine(name, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance, Vbase)
+        self.transmissionline[name] = TransmissionLine(name, bus1, bus2, lengthmi, axaxis, ayaxis, bxaxis, byaxis, cxaxis, cyaxis, codeword, numberofbundles, seperationdistance, Vbase, self.Sbase)
 
         # Add the buses it is connected to
         self.__add_bus(bus1)

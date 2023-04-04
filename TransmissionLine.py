@@ -13,7 +13,7 @@ class TransmissionLine:
     # A codeword for the conductor type, number of bundles per phase, separation of bundles per phase, and voltage base
     def __init__(self, name: str, bus1: str, bus2: str, lengthmi: float,
                  axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float,
-                 codeword: str, numberofbundles: int, seperationdistance: float, Vbase: float):
+                 codeword: str, numberofbundles: int, seperationdistance: float, Vbase: float, Sbase: float):
 
         # Set name, buses, and length of line
         self.name = name
@@ -23,7 +23,6 @@ class TransmissionLine:
         self.numberofbundles = numberofbundles
         self.powerloss = None
         # Set S base, frequency, and calculate Z base
-        Sbase = 100
         Zbase = Vbase**2/Sbase
         frequency = 60
 
@@ -61,10 +60,10 @@ class TransmissionLine:
         # Use C to get B per unit
         self.Bpu = Ctotal * 2 * numpy.pi * frequency * Zbase
 
-        # if name == "L6":
-        #    print(name, self.Rpu)
-        #    print(name, self.Xpu)
-        #    print(name, self.Bpu)
+        if name == ("L6") or  name == "L1" or  name == "L4":
+            print(name, self.Rpu)
+            print(name, self.Xpu)
+            print(name, self.Bpu)
 
     def store_power_loss(self, powerloss):
         self.powerloss = powerloss

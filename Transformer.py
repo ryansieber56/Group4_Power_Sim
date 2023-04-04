@@ -5,7 +5,7 @@ import numpy
 class Transformer:
 
     # Transformer has base parameters name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, and xrratio
-    def __init__(self, name, bus1, bus2, apparentpowerrating, v1rated, v2rated, impedance, xrratio):
+    def __init__(self, name, bus1, bus2, apparentpowerrating, v1rated, v2rated, impedance, xrratio, Sbase):
 
         # Set base values
         self.name = name
@@ -18,7 +18,7 @@ class Transformer:
         self.xrratio = xrratio
         self.powerloss = 0
         # Establish Sbase and Vbase
-        Sbase = 100  # MVA
+        self.Sbase = Sbase  # MVA
         Vbase = v2rated  # kV
 
         # Calculate Z Real and Z imaginary for the transformer
