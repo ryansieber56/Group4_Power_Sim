@@ -60,11 +60,11 @@ class DCPowerFlow:
         # Calculate the angle values by Bbus_inv * P_given
         self.delta = -1 * np.dot(self.Bbus_inv, temp_P_given)
 
-
+        #self.delta = [-4.264455*np.pi/180,-5.294268*np.pi/180,-4.562926*np.pi/180,-4.697326*np.pi/180,-3.791440*np.pi/180,2.203836*np.pi/180,]
 
         # Print angle and voltage information -> Complex power is good
         for i in range(self.length-1):
-            print(i, "delta:", self.delta[i]*180/np.pi, "voltage:", self.voltage_pu[i], "P_given:", P_given[i+1])
+            print("Bus:", i+2, "delta:", self.delta[i]*180/np.pi, "voltage:", self.voltage_pu[i], "P_given:", P_given[i+1])
 
         # Calculate the complex voltage
         for i in range(self.length-1):
@@ -107,7 +107,7 @@ class DCPowerFlow:
                 # if self.slack_bus == 6 and i == 6:
                 #    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
 
-        self.P_values = np.imag(self.S_values)
+        self.P_values = self.S_values
         #self.P_values = abs(self.S_values)
         #self.P_values = np.zeros(self.length)
         #for i in range(self.length):

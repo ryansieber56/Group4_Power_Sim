@@ -8,6 +8,7 @@ from Grid import Grid
 from Newton_Raphson_Power_Flow import NewtonRhapson
 from DC_Power_Flow_Solver import DCPowerFlow
 from Fast_Decoupled_Solver import FastDecoupled
+from Sequence_Networks import SequenceNet
 # Create Power Grid
 MainGrid = Grid("MainGrid")
 
@@ -37,7 +38,7 @@ MainGrid.setBusData("Bus1", "Slack Bus", 0, 0)
 MainGrid.setBusData("Bus2", "Load Bus", 0, 0)
 MainGrid.setBusData("Bus3", "Load Bus", 110, 50)
 #MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
-MainGrid.setBusData("Bus4", "Load Bus", 100, 200)
+MainGrid.setBusData("Bus4", "Load Bus", 100, 70)
 
 MainGrid.setBusData("Bus5", "Load Bus", 100, 65)
 MainGrid.setBusData("Bus6", "Load Bus", 0, 0)
@@ -46,5 +47,8 @@ MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
 
 # Calculate Power Flow
 #NewtonRhapson(MainGrid)
-DCPowerFlow(MainGrid) # should have no losses
+#DCPowerFlow(MainGrid)  # should have no losses
 #FastDecoupled(MainGrid)
+
+# Solve Sequence Network
+SequenceNet(MainGrid, "Solid Ground", 0, "Resistor", 1)

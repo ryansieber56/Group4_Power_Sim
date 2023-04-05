@@ -205,6 +205,7 @@ class NewtonRhapson:
                 break
             self.capacitor_bank_adjustment = 0
             if self.Q_k > self.Q_k_limit and self.add_cap == 1:
+                print("LIMIT EXCEEDED, INCREASING CAPACITOR BANK")
                 self.capacitor_bank_adjustment = 1
                 # Add capacitor bank to highest MVAR load
                 j = 0
@@ -221,7 +222,7 @@ class NewtonRhapson:
                 self.V_complex[i] = V[i] * np.cos(delta[i]) + 1j * V[i] * np.sin(delta[i])
             # print("V_complex for bus", i+1, ":", V_complex[i])
             # Print Values used -> double-checked and all voltages and angles are correct
-            # print(i, " V ", V[i], "delta[i]", delta[i])
+            print(i, " V ", V[i], "delta[i]", delta[i])
         #print(np.imag(self.B)*100)
 
         self.solve_power_flow(Grid)
