@@ -51,4 +51,4 @@ MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
 #FastDecoupled(MainGrid)
 
 # Solve Sequence Network
-SequenceNet(MainGrid, "Solid Ground", 0, "Resistor", 1)
+SequenceNet(MainGrid, "Solid ground", 0, "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)

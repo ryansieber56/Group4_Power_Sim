@@ -78,12 +78,10 @@ class NewtonRhapson:
                     continue
 
                 for j in range(self.length):
-                    Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(
-                        delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    Parr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.cos(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
                     if i == self.voltage_controlled_bus:
                         continue
-                    Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(
-                        delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                    Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
             # P does not include slack bus
             if self.slack_bus == 0:
@@ -94,7 +92,8 @@ class NewtonRhapson:
                 Q_mismatch = Q_given[1:6] - Qarr[1:6]
 
             self.convergencemet = 1
-
+            #print("P_mismatch iteration", iteration, P_mismatch)
+            #print("Q_mismatch iteration", iteration, Q_mismatch)
             # Check Power Mismatch for Convergence
             mismatchPQ = np.concatenate((P_mismatch, Q_mismatch))
             for i in range(len(mismatchPQ)):

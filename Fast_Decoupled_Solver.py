@@ -5,25 +5,32 @@ import pandas as pd
 from Grid import Grid
 
 
-# Newton_Rhapson
-import numpy as np
-import pandas as pd
-
-from Grid import Grid
-
-
 class FastDecoupled:
 
-    # Power flow
+    # Fast Decoupled
     def __init__(self, Grid):
+
+        # Initial parameters that will be used later
         self.length = len(Grid.buses)
         self.P_loss = np.zeros((self.length, self.length))
         self.system_loss = 0
         self.P_inj_slack = 0
         self.Q_inj_slack = 0
         self.Q_inj_PV = 0
-        self.Q_k_limit = Grid.Q_k_limit # In units of VA
         self.Q_limit_passed = 0
+        self.convergencemet = 0
+        self.capacitor_bank_adjustment = 0
+        self.B = 0
+        self.add_cap = 1
+        self.convergencevalue = Grid.convergencevalue
+        self.Q_k_limit = Grid.Q_k_limit # In units of VA
+        self.length = len(Grid.buses)
+        self.Vbase = Grid.transformers[list(Grid.transformers.keys())[0]].v2rated * 1000  # In Volts
+        self.Sbase = Grid.Sbase * 1000000  # VA
+        self.Vbase_slack1 = Grid.transformers[list(Grid.transformers.keys())[0]].v1rated * 1000  # In Volts
+        self.Vbase_slack2 = Grid.transformers[list(Grid.transformers.keys())[1]].v1rated * 1000  # In Volts
+
+        # Initialize Empty Arrays/ Matrices
         self.S_values = np.zeros((self.length, self.length), dtype=complex)
         self.Q_values = np.zeros((self.length, self.length))
         self.P_values = np.zeros((self.length, self.length))
@@ -31,21 +38,12 @@ class FastDecoupled:
         self.V_complex = np.zeros(self.length, dtype=complex)
         self.Parr = []
         self.Qarr = []
-        self.convergencemet = 0
-        self.convergencevalue = Grid.convergencevalue
-        self.Vbase = Grid.transformers[list(Grid.transformers.keys())[0]].v2rated * 1000  # In Volts
-        self.Sbase = Grid.Sbase * 1000000  # VA
-        self.Vbase_slack1 = Grid.transformers[list(Grid.transformers.keys())[0]].v1rated * 1000  # In Volts
-        self.Vbase_slack2 = Grid.transformers[list(Grid.transformers.keys())[1]].v1rated * 1000  # In Volts
-        self.add_cap = 1
-        self.capacitor_bank_adjustment = 0
-        self.B = 0
-        # set blank array for given values
         P_given = np.zeros(self.length)
         Q_given = np.zeros(self.length)
         P_mismatch = np.zeros(self.length-1)
         Q_mismatch = np.zeros(self.length-2)
-        # find slack bus
+
+        # Find slack bus and voltage controlled bus by looping through Buses Dictionary in Grid Class
         self.slack_bus = None
         for i in range(self.length):
             if Grid.buses["Bus" + str(i + 1)].type == "Slack Bus":
@@ -53,7 +51,7 @@ class FastDecoupled:
             if Grid.buses["Bus" + str(i + 1)].type == "Voltage Controlled Bus":
                 self.voltage_controlled_bus = i
 
-        # set given values
+        # Set given values by looping through Buses Dictionary in Grid Class, Loads are negative
         for i in range(self.length):
             if Grid.buses["Bus" + str(i + 1)].type == "Load Bus":
                 P_given[i] = -Grid.buses["Bus" + str(i + 1)].P / 100
@@ -62,7 +60,8 @@ class FastDecoupled:
                 P_given[i] = Grid.buses["Bus" + str(i + 1)].P / 100
                 Q_given[i] = Grid.buses["Bus" + str(i + 1)].Q / 100
         self.Q_given = Q_given
-        # set intial guess
+
+        # Set flat start
         V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         delta = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
