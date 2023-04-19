@@ -3,11 +3,11 @@ import numpy as np
 class SequenceNet:
 
     # Power flow
-    def __init__(self, Grid, Zg1_grounding: str, Zg1_value:float, Zg2_grounding: str, Zg2_value:float, Zt1_connection1: str, Zt1_grounding1: str, Zt1_value1:float, Zt1_connection2: str, Zt1_grounding2: str, Zt1_value2:float, Zt2_connection1: str, Zt2_grounding1: str, Zt2_value1:float, Zt2_connection2: str, Zt2_grounding2: str, Zt2_value2:float):
-        # Per unit values, update later to make more generic
-        self.x1generators_oldpu = 0.12
-        self.x2generators_oldpu = 0.14
-        self.x0generators_oldpu = 0.05
+    def __init__(self, Grid, x1generators: float, x2generators: float, x0generators: float, Zg1_grounding: str, Zg1_value:float, Zg2_grounding: str, Zg2_value:float, Zt1_connection1: str, Zt1_grounding1: str, Zt1_value1:float, Zt1_connection2: str, Zt1_grounding2: str, Zt1_value2:float, Zt2_connection1: str, Zt2_grounding1: str, Zt2_value1:float, Zt2_connection2: str, Zt2_grounding2: str, Zt2_value2:float):
+        # Per unit values for generator
+        self.x1generators_oldpu = x1generators
+        self.x2generators_oldpu = x2generators
+        self.x0generators_oldpu = x0generators
 
         # Establish Which Sequence Networks you want to create
         Generate_Zbus_0 = 1
@@ -53,11 +53,11 @@ class SequenceNet:
             self.Ybus1[6][6] = 1 / (Grid.transformers["T2"].Rpu + 1j * self.x1generators_newpu2 + 1j * Grid.transformers["T2"].Xpu)
 
             # Zbus1 is inverse of Ybus1
-            self.Zbus1 = np.linalg.inv(self.Ybus1)
-            print("Ybus1")
-            self.printmatrix(self.Ybus1)
-            print("Zbus1")
-            self.printmatrix(self.Zbus1)
+            #self.Zbus1 = np.linalg.inv(self.Ybus1)
+            #print("Ybus1")
+            #self.printmatrix(self.Ybus1)
+            #print("Zbus1")
+            #self.printmatrix(self.Zbus1)
 
         # Generate Zbus2 -> Negative Sequence
         if Generate_Zbus_2 == 1:
@@ -76,10 +76,10 @@ class SequenceNet:
 
             # Zbus2 is inverse of Ybus2
             self.Zbus2 = np.linalg.inv(self.Ybus2)
-            print("Ybus2")
-            self.printmatrix(self.Ybus2)
-            print("Zbus2")
-            self.printmatrix(self.Zbus2)
+            #print("Ybus2")
+            #self.printmatrix(self.Ybus2)
+            #print("Zbus2")
+            #self.printmatrix(self.Zbus2)
 
         # Generate Zbus0 -> 0 Sequence, Need Help
         if Generate_Zbus_0 == 1:
@@ -303,12 +303,12 @@ class SequenceNet:
 
             # Print the Z0-bus matrix
             self.Zbus0 = np.linalg.inv(self.Ybus0)
-            print("Ybus0 Matrix")
-            self.printmatrix(self.Ybus0)
-            print("Z0-bus Matrix")
-            self.printmatrix(self.Zbus0)
+            #print("Ybus0 Matrix")
+            #self.printmatrix(self.Ybus0)
+            #print("Z0-bus Matrix")
+            #self.printmatrix(self.Zbus0)
 
-
+    # Function to easily print Matrices
     def printmatrix(self, Matrix):
         i = 0
         while i < 7:

@@ -22,6 +22,7 @@ class TransmissionLine:
         self.lengthmi = lengthmi
         self.numberofbundles = numberofbundles
         self.powerloss = None
+
         # Set S base, frequency, and calculate Z base
         Zbase = Vbase**2/Sbase
         frequency = 60
@@ -59,11 +60,6 @@ class TransmissionLine:
 
         # Use C to get B per unit
         self.Bpu = Ctotal * 2 * numpy.pi * frequency * Zbase
-
-        #if name == ("L6") or  name == "L1" or  name == "L4":
-        #    print(name, self.Rpu)
-        #    print(name, self.Xpu)
-        #    print(name, self.Bpu)
 
     def store_power_loss(self, powerloss):
         self.powerloss = powerloss

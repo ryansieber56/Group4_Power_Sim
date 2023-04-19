@@ -9,6 +9,7 @@ from Newton_Raphson_Power_Flow import NewtonRhapson
 from DC_Power_Flow_Solver import DCPowerFlow
 from Fast_Decoupled_Solver import FastDecoupled
 from Sequence_Networks import SequenceNet
+from Fault_Calculation import FaultCalculation
 # Create Power Grid
 MainGrid = Grid("MainGrid")
 
@@ -51,4 +52,5 @@ MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
 #FastDecoupled(MainGrid)
 
 # Solve Sequence Network
-SequenceNet(MainGrid, "Solid ground", 0, "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)
+SeqNet = SequenceNet(MainGrid, 0.12, 0.14, 0.05, "Solid ground", 0, "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)
+FaultCalculation(MainGrid, SeqNet, "Symmetrical Fault")

@@ -4,12 +4,23 @@ import pandas as pd
 
 from Grid import Grid
 
-
+# Clean up comment
 class NewtonRhapson:
 
     # Power flow
     def __init__(self, Grid):
-        self.add_cap = 1  # 1 for add cap to lower generator MVAR, 0 for solve exceeded limit
+        # add_cap is set so that 1 will add capacitor bank to lower generator MVAR, 0 to solve exceeded limit function
+        self.add_cap = 1
+        # B will be the capactitor bank added
+        self.B = 0
+        # Start on iteration 1
+        iteration = 1
+
+        # Set to 0, if becomes 1 means an adjustment was recently made with the capacitor
+        # bank and the program should reiterate
+        self.capacitor_bank_adjustment = 0
+
+        # Initialize paramters and blank arrays
         self.length = len(Grid.buses)
         self.P_loss = np.zeros((self.length, self.length))
         self.system_loss = 0
@@ -23,11 +34,16 @@ class NewtonRhapson:
         self.P_values = np.zeros((self.length, self.length))
         self.I_values = np.zeros((self.length, self.length), dtype=complex)
         self.V_complex = np.zeros(self.length, dtype=complex)
-        self.Parr = []
-        self.Qarr = []
+        J11 = np.zeros((self.length - 1, self.length - 1))
+        J12 = np.zeros((self.length - 1, self.length - 1))
+        J21 = np.zeros((self.length - 1, self.length - 1))
+        J22 = np.zeros((self.length - 1, self.length - 1))
+        Parr = np.zeros(self.length)
+        Qarr = np.zeros(self.length)
         self.convergencemet = 0
-        self.B = 0
         self.convergencevalue = Grid.convergencevalue
+
+        # Set base values
         self.Vbase = Grid.transformers[list(Grid.transformers.keys())[0]].v2rated * 1000  # In Volts
         self.Sbase = Grid.Sbase * 1000000  # VA
         self.Vbase_slack1 = Grid.transformers[list(Grid.transformers.keys())[0]].v1rated * 1000  # In Volts
@@ -38,6 +54,7 @@ class NewtonRhapson:
         Q_given = np.zeros(self.length)
         P_mismatch = np.zeros(self.length-1)
         Q_mismatch = np.zeros(self.length-2)
+
         # find slack bus
         self.slack_bus = None
         for i in range(self.length):
@@ -55,18 +72,18 @@ class NewtonRhapson:
                 P_given[i] = Grid.buses["Bus" + str(i + 1)].P / 100
                 Q_given[i] = Grid.buses["Bus" + str(i + 1)].Q / 100
 
+        # Set self.Q_given so that Q_given can be used in other functions
         self.Q_given = Q_given
+
         # set intial guess
         V = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         delta = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        # establish array for calculated value, without slack bus
-        Parr = np.zeros(self.length)
-        Qarr = np.zeros(self.length)
-        iteration = 1
-        self.capacitor_bank_adjustment = 0
+        # Make sure convergence has not been met and that a capacitor bank was not just added, or that the max
+        # Iterations has not been exceeded
         while (self.convergencemet == 0 and self.capacitor_bank_adjustment == 1) or iteration < 30:
 
+            # Reset the calculated values every time through
             for i in range(self.length):
                 Parr[i] = 0
                 Qarr[i] = 0
@@ -83,7 +100,7 @@ class NewtonRhapson:
                         continue
                     Qarr[i] += V[i] * V[j] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
-            # P does not include slack bus
+            # P does not include slack bus, Q does not include Voltage controlled bus or slack bus
             if self.slack_bus == 0:
                 P_mismatch = P_given[1:] - Parr[1:]
                 Q_mismatch = Q_given[1:6] - Qarr[1:6]
@@ -91,25 +108,23 @@ class NewtonRhapson:
                 P_mismatch = P_given[0:6] - Parr[0:6]
                 Q_mismatch = Q_given[1:6] - Qarr[1:6]
 
+            # Set the convergence met variable to 1
             self.convergencemet = 1
-            #print("P_mismatch iteration", iteration, P_mismatch)
-            #print("Q_mismatch iteration", iteration, Q_mismatch)
+
             # Check Power Mismatch for Convergence
             mismatchPQ = np.concatenate((P_mismatch, Q_mismatch))
             for i in range(len(mismatchPQ)):
+                # If any value in the mismatched is greater than the convergence requirement, set convergence parameter
+                # to not met
                 if mismatchPQ[i] > self.convergencevalue:
                     self.convergencemet = 0
                     break
-
+            # If convergence has been met and there was no capacitor adjustment, notify user it converged
             if self.convergencemet == 1 and self.capacitor_bank_adjustment == 0:
                 print("It converged after iteration ", iteration - 1)
                 break
 
             # Calculate Jacobian Matrix
-            J11 = np.zeros((self.length - 1, self.length - 1))
-            J12 = np.zeros((self.length - 1, self.length - 1))
-            J21 = np.zeros((self.length - 1, self.length - 1))
-            J22 = np.zeros((self.length - 1, self.length - 1))
             skipterm = 0
             for i in range(self.length):
                 # if slack bus skip
@@ -119,6 +134,8 @@ class NewtonRhapson:
                 for j in range(self.length):
                     if j == self.slack_bus:
                         continue
+
+                    # Diagonals have their own formula
                     if i == j:
                         for z in range(self.length):
                             J12[i - skipterm, j - skipterm] += abs(Grid.Ybus[i, z]) * V[z] * np.cos(
@@ -142,6 +159,7 @@ class NewtonRhapson:
                         J22[i - skipterm, j - skipterm] = J22[i - skipterm, j - skipterm] - (
                                     V[i] * abs(Grid.Ybus[i, j]) * np.sin(np.angle(Grid.Ybus[i, j])))
 
+                    # If not a diagonal of the jacobian
                     else:
                         J11[i - skipterm, j - skipterm] = V[i] * abs(Grid.Ybus[i, j]) * V[j] * np.sin(
                             delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
@@ -169,13 +187,16 @@ class NewtonRhapson:
                 J_temp = np.delete(J, 6, 0)
                 J = J_temp
 
-            # calculate change in voltage and phase angle
+            # Calculate inverse of the Jacobian
             J_inv = np.linalg.inv(J)
 
             # combine mismatches
             mismatch = np.concatenate((P_mismatch, Q_mismatch))
+
+            # Find correction
             correction = np.dot(J_inv, mismatch)
 
+            # Seperate the angle correction and the voltage correction
             delta_correction = correction[:6]
             V_correction = correction[6:]
 
@@ -186,24 +207,35 @@ class NewtonRhapson:
             V_correction = np.concatenate((V_correction[:6], [0], V_correction[6:]), axis=0)
             V_correction = np.concatenate((V_correction[:0], [0], V_correction[0:]), axis=0)
 
+            # Update the angle and voltage
             delta += delta_correction
             V += V_correction
 
+            # Increase iteration
             iteration += 1
 
+            # Parameter to store Q from Voltage controlled bus
             self.Q_k = 0
+
+            # Calculate Q_k
             for i in range(self.length):
                 self.Q_k += abs(Grid.Ybus[self.voltage_controlled_bus, i]) * V[i] * np.sin(delta[self.voltage_controlled_bus] - delta[i] - np.angle(Grid.Ybus[self.voltage_controlled_bus,i]))
             self.Q_k *= V[self.voltage_controlled_bus]
             self.Q_k *= self.Sbase
-            # Just testing other slack bus first
+
+            # If Q from VCB has exceeded the limit, and a capacitor bank is not wanted
             if self.Q_k > self.Q_k_limit and self.add_cap == 0:
-                print("LIMIT EXCEEDED, SWITCHING TO LOAD")
+                print("VAR LIMIT EXCEEDED: Generator bus will no longer be a Voltage Controlled Bus")
                 self.solve_exceeded_var_power_flow(Grid)
                 self.Q_limit_passed = 1
                 break
+
+            # Reset the term to 0 to see if another adjustment needs made
             self.capacitor_bank_adjustment = 0
+
+            # If Q from VCB has exceeded the limit, and a capacitor bank is wanted
             if self.Q_k > self.Q_k_limit and self.add_cap == 1:
+                # Adjustment Needed
                 print("LIMIT EXCEEDED, INCREASING CAPACITOR BANK")
                 self.capacitor_bank_adjustment = 1
                 # Add capacitor bank to highest MVAR load
@@ -213,17 +245,16 @@ class NewtonRhapson:
                         j = i
                 Grid.Ybus[j, j] += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
                 self.B += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
+
+                # Reset iteration so that it does not exceed the iteration limit while adding banks
                 iteration = 0
         # Check to make sure V_complex was not set up by Var limit solver
         if self.Q_limit_passed == 0:
             # Calculate the complex voltage
             for i in range(self.length):
                 self.V_complex[i] = V[i] * np.cos(delta[i]) + 1j * V[i] * np.sin(delta[i])
-            # print("V_complex for bus", i+1, ":", V_complex[i])
-            # Print Values used -> double-checked and all voltages and angles are correct
-            print(i, " V ", V[i], "delta[i]", delta[i])
-        #print(np.imag(self.B)*100)
 
+        # Function to solve power flow
         self.solve_power_flow(Grid)
 
     def solve_power_flow(self, Grid):
@@ -232,13 +263,12 @@ class NewtonRhapson:
         I_values_per_unit = np.zeros((self.length, self.length), dtype=complex)
         for i in range(self.length):
             for j in range(self.length):
-                if j <= i:
-                    continue
                 I_values_per_unit[i, j] = (self.V_complex[j] - self.V_complex[i]) * (Grid.Ybus[i, j])
 
         # Calculate actual current values
         self.I_values = (self.Sbase / (self.Vbase * np.sqrt(3))) * I_values_per_unit
         self.I_values[0, 1] *= self.Vbase / self.Vbase_slack1 # -> Because from Bus1 to 2
+        self.I_values[6, 5] *= self.Vbase / self.Vbase_slack2 # -> Because from Bus7 to 6
 
         # Check ampacity limit
         self.check_ampacity()
@@ -246,17 +276,21 @@ class NewtonRhapson:
         # Take voltage values out of per unit
         self.V_complex *= self.Vbase
         I_conjugate = np.conjugate(self.I_values)
+
         # Set up to find P and Q
         # Find P, S = P + jQ, and S = I_conjugate * V * sqrt(3)
+        # Find S first
         for i in range(self.length):
             for j in range(self.length):
                 self.S_values[i, j] = self.V_complex[i] * I_conjugate[i, j] * np.sqrt(3)  # because 3 phase
-                #if self.slack_bus == 0 and i == 0:
+                # Transformer has different base
                 if i==0:
                     self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack1
-                #if self.slack_bus == 6 and i == 6:
-                #    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
+                # Transformer has different base
+                if i==6:
+                    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
 
+        # P is the real part of S, Q is the imaginary part of S
         self.P_values = np.real(self.S_values)
         self.Q_values = np.imag(self.S_values)
 
@@ -268,6 +302,7 @@ class NewtonRhapson:
                 for i, value in Grid.transmissionline.items():
                     if value.bus1 == ("Bus" + str(i1+1)) and value.bus2 == ("Bus" + str(i2+1)):
                         powerloss = abs(self.I_values[i1, i2]) ** 2 * value.Rtotal * 3 # because 3 phase
+                        # Store the power loss, so it can be accessed through the grid class
                         Grid.store_power_loss(i, powerloss)
                         self.system_loss += powerloss
 
@@ -279,67 +314,90 @@ class NewtonRhapson:
                         if abs(self.I_values[i1, i2]) == 0:
                             continue
                         powerloss = abs(self.I_values[i1, i2]) ** 2 * value.Rpu * self.Vbase ** 2/self.Sbase * 3 # because 3 phase
-                        #if(self.slack_bus == 0 and value.name == "T1"):
-                         #   powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack1 ** 2
+                        # Transformers have a different base
                         if value.name == "T1":
                             powerloss = powerloss / (self.Vbase ** 2) * self.Vbase_slack1 ** 2
-                        #if(self.slack_bus == 6 and value.name == "T2"):
-                        #    powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack2 ** 2
+                        if value.name == "T2":
+                            powerloss = powerloss / (self.Vbase **2) * self.Vbase_slack2 ** 2
+                        # Store the power loss in the transformer in the Grid class also
                         Grid.store_power_loss_transformer(i, powerloss)
+                        # Update system power loss
                         self.system_loss += powerloss
 
         # POWER AND Q INJECTIONS FOR SLACK + PV
         for i in range(self.length):
+            # Iterate through each Bus to sum up these values
             self.Q_inj_slack += abs(Grid.Ybus[self.slack_bus, i]) * abs(self.V_complex[i])/self.Vbase * np.sin(np.angle(self.V_complex[self.slack_bus]) - np.angle(self.V_complex[i]) - np.angle(Grid.Ybus[self.slack_bus, i]))
             self.P_inj_slack += abs(Grid.Ybus[self.slack_bus, i]) * abs(self.V_complex[i])/self.Vbase * np.cos(np.angle(self.V_complex[self.slack_bus]) - np.angle(self.V_complex[i]) - np.angle(Grid.Ybus[self.slack_bus, i]))
             self.Q_inj_PV += abs(Grid.Ybus[self.voltage_controlled_bus, i]) * abs(self.V_complex[i])/self.Vbase * np.sin(np.angle(self.V_complex[self.voltage_controlled_bus]) - np.angle(self.V_complex[i]) - np.angle(Grid.Ybus[self.voltage_controlled_bus, i]))
+
+        # Convert to the values to their actual values instead of per unit
         self.P_inj_slack *= abs(self.V_complex[self.slack_bus])/self.Vbase * self.Sbase
         self.Q_inj_slack *= abs(self.V_complex[self.slack_bus])/self.Vbase * self.Sbase
         self.Q_inj_PV *= abs(self.V_complex[self.voltage_controlled_bus])/self.Vbase * self.Sbase
+
+        # Print these values in "Mega" units
         print("self.P_inj_slack:", self.P_inj_slack/1000000, "MW")
         print("self.Q_inj_slack:", self.Q_inj_slack/1000000, "MVAR")
         print("self.Q_inj_PV:", self.Q_inj_PV/1000000, "MVAR")
 
-        # Write to Excel file/ Print
-        # Print Values
+        # Print I Values
         print("\nI_Values")
         for i in range(self.length):
             for j in range(self.length):
-                if abs(self.I_values[i, j]) == 0:
+                # If the value is 0, do not print, if the value is negative, current is flowing the other way
+                # So it will print out at a later iteration in the loop
+                if abs(self.I_values[i, j]) == 0 or self.I_values[i, j] < 0:
                     continue
                 print("B" + str(i + 1) + " to B" + str(j + 1) + " ", abs(self.I_values[i, j]))
 
-        #print("\nS_values")
-        #for i in range(self.length):
-        #    for j in range(self.length):
-        #        if abs(self.S_values[i, j]) == 0:
-        #            continue
-        #        print("Bus" + str(i + 1) + " to Bus" + str(j + 1) + " ", self.S_values[i, j] / 1000000, "MVA", abs(self.S_values[i,j])/1000000, "MVA")
-
-        print("\nP_values")
+        # Print the P values from the Sending End, meaning they are positive
+        print("\nP_values Sending End")
         for i in range(self.length):
             for j in range(self.length):
-                if abs(self.P_values[i, j]) == 0:
+                if abs(self.P_values[i, j]) == 0 or self.P_values[i, j] < 0:
                     continue
                 print("Bus" + str(i + 1) + " to Bus" + str(j + 1) + " ", self.P_values[i, j] / 1000000, "MW")
 
-        print("\nQ_values")
+        # Print the P values from the Receiving End, meaning they are negative
+        print("\nP_values Receiving End")
         for i in range(self.length):
             for j in range(self.length):
-                if abs(self.Q_values[i, j]) == 0:
+                if abs(self.P_values[i, j]) == 0 or self.P_values[i, j] > 0:
+                    continue
+                print("Bus" + str(i + 1) + " from Bus" + str(j + 1) + " ", self.P_values[i, j] / 1000000, "MW")
+
+        # Print the Q values from the Sending End, meaning they are positive
+        print("\nQ_values Sending End")
+        for i in range(self.length):
+            for j in range(self.length):
+                if abs(self.Q_values[i, j]) == 0 or self.Q_values[i, j] < 0:
                     continue
                 print("Bus" + str(i + 1) + " to Bus" + str(j + 1) + " ", self.Q_values[i, j] / 1000000, "MVAR")
 
+        # Print the Q values from the Sending End, meaning they are negative
+        print("\nQ_values Receiving End")
+        for i in range(self.length):
+            for j in range(self.length):
+                if abs(self.Q_values[i, j]) == 0 or self.Q_values[i, j] > 0:
+                    continue
+                print("Bus" + str(i + 1) + " from Bus" + str(j + 1) + " ", self.Q_values[i, j] / 1000000, "MVAR")
+
+        # Print Power Loss Per Line
         print("\nPower Loss Per Line")
         for i, value in Grid.transmissionline.items():
             print(i, value.powerloss/1000000, "MW")
 
+        # Print Power Loss in the Transformers
         print("\nPower Loss in Transformers")
         for i, value in Grid.transformers.items():
             print(i, value.powerloss/1000000, "MW")
 
+        # Print the total system power loss
         print("\nTotal System Power Loss:", self.system_loss/1000000, "MW")
 
+    # If the QVAR limit was exceeded previously, this function will be used if no capacitor bank is added.
+    # It has the same functionality as before, however there is no longer a Voltage controlled bus
     def solve_exceeded_var_power_flow(self, Grid):
         # set blank array for given values
         P_given = np.zeros(self.length)
@@ -373,7 +431,6 @@ class NewtonRhapson:
         iteration = 1
 
         while self.convergencemet == 0 and iteration < 30:
-            # print("\n\nIteration = ", iteration)
             for i in range(self.length):
                 Parr[i] = 0
                 Qarr[i] = 0
@@ -396,8 +453,7 @@ class NewtonRhapson:
             if self.slack_bus == 6:
                 P_mismatch = P_given[0:6] - Parr[0:6]
                 Q_mismatch = Q_given[0:6] - Qarr[0:6]
-            #print("P_mismatch", P_mismatch)
-            #print("Q_mismatch", Q_mismatch)
+
             self.convergencemet = 1
 
             # Check Power Mismatch for Convergence
@@ -463,24 +519,12 @@ class NewtonRhapson:
             # Combine Jacobian
             J = np.block([[J11, J12], [J21, J22]])
 
-
-            # print("Jacobian Matrix", iteration-1)
-            # i = 0
-            # while i < len(J):
-            #    j = 0
-            #    print("\nRow " + str(i + 1))
-            #    while j < len(J):
-            #        print(J[i][j])
-            #        j += 1
-            #    i = i + 1
-
             # calculate change in voltage and phase angle
             J_inv = np.linalg.inv(J)
 
             # combine mismatches
             mismatch = np.concatenate((P_mismatch, Q_mismatch))
             correction = np.dot(J_inv, mismatch)
-
 
             delta_correction = correction[:6]
             V_correction = correction[6:]
@@ -496,9 +540,6 @@ class NewtonRhapson:
             V += V_correction
             iteration += 1
 
-        # Setup V_complex
-        for i in range(self.length):
-            self.V_complex[i] = V[i] * np.cos(delta[i]) + 1j * V[i] * np.sin(delta[i])
 
     def check_ampacity(self):
         i = 1
@@ -510,7 +551,7 @@ class NewtonRhapson:
                     continue
                 if self.I_values[i][j] >= 475:
                     print("Error: Ampacity limit exceeded")
-                    #exit(-1)
+                    exit(-1)
                 j += 1
             j = 0
             i += 1

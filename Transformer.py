@@ -24,7 +24,6 @@ class Transformer:
         # Calculate Z Real and Z imaginary for the transformer
         self.Rpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.cos(numpy.arctan(xrratio))
         self.Xpu = impedance * (v2rated * v2rated / apparentpowerrating)/(Vbase * Vbase/Sbase) * numpy.sin(numpy.arctan(xrratio))
-        #print(self.name, " Rpu ", self.Rpu, " XPU ", self.Xpu)
 
     def store_power_loss(self, powerloss):
         self.powerloss = powerloss
