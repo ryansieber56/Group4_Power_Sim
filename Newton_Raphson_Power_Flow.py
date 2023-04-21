@@ -349,6 +349,9 @@ class NewtonRhapson:
                 # So it will print out at a later iteration in the loop
                 if abs(self.I_values[i, j]) == 0 or self.I_values[i, j] < 0:
                     continue
+                # Only print Line currents, although transformer currents also matched with powerworld
+                if i == 0 or j == 0 or i == 6 or j == 6:
+                    continue
                 print("B" + str(i + 1) + " to B" + str(j + 1) + " ", abs(self.I_values[i, j]))
 
         # Print the P values from the Sending End, meaning they are positive

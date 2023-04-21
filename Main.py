@@ -29,7 +29,7 @@ MainGrid.add_transmissionline("L4", "Bus4", "Bus6", 20, 0, 0, 19.5, 0, 39, 0, "P
 MainGrid.add_transmissionline("L5", "Bus5", "Bus6", 10, 0, 0, 19.5, 0, 39, 0, "Partridge", 2, 1.5)
 MainGrid.add_transmissionline("L6", "Bus4", "Bus5", 35, 0, 0, 19.5, 0, 39, 0, "Partridge", 2, 1.5)
 
-# Calculate and Display Y_bus Matrix
+# Calculate Y_bus Matrix
 MainGrid.calculate_Ybus()
 
 # Set bus types
@@ -47,10 +47,10 @@ MainGrid.setBusData("Bus7", "Voltage Controlled Bus", 200, 1)
 #MainGrid.setBusData("Bus1", "Voltage Controlled Bus", 200, 1)
 
 # Calculate Power Flow
-#NewtonRhapson(MainGrid)
+NewtonRhapson(MainGrid)
 #DCPowerFlow(MainGrid)  # should have no losses
 #FastDecoupled(MainGrid)
 
 # Solve Sequence Network
 SeqNet = SequenceNet(MainGrid, 0.12, 0.14, 0.05, "Solid ground", 0, "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)
-FaultCalculation(MainGrid, SeqNet, "Symmetrical Fault")
+FaultCalculation(MainGrid, SeqNet, "Symmetrical Fault", 7, 0)

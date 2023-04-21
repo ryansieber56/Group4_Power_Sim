@@ -11,8 +11,8 @@ class SequenceNet:
 
         # Establish Which Sequence Networks you want to create
         Generate_Zbus_0 = 1
-        Generate_Zbus_1 = 0
-        Generate_Zbus_2 = 0
+        Generate_Zbus_1 = 1
+        Generate_Zbus_2 = 1
 
         # Establish Base Values
         self.Sbase = Grid.Sbase * 1000000 # In VA
@@ -174,16 +174,17 @@ class SequenceNet:
             self.Ybus0 = Grid.Ybus
 
             # Grounded Wye can go to Grounded Wye or Delta to not be 0
+            # Grounded Wye to Grounded Wye on Sequence Networks-> Set Ohms for each side using each side's base
             if Zt1_connection1 == "Grounded Wye":
-                if Zt1_connection2 == "Grounded Wye":  # PU Stuff, Mainly voltages r confusing, convert the far bus to close voltage base???
-                    self.Zt11 = Zt1_value1 * 3 * (self.Vbase_bus1**2 / nominalpower1) * (self.Sbase / nominalpower2)
-                    self.Zt12 = Zt1_value2 * 3 * (self.Vbase_main**2 / self.Sbase)
-                    self.Ybus0[0][1] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11)  # T1
+                if Zt1_connection2 == "Grounded Wye":
+                    self.Zt11 = Zt1_value1 * 3 / self.Zbase1
+                    self.Zt12 = Zt1_value2 * 3 / self.Zbasemain
+                    self.Ybus0[0][1] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11 + self.Zt12)  # T1
                     self.Ybus0[1][0] = self.Ybus0[0][1]  # T1
-                    self.Ybus0[0][0] = 1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11 + 1j * self.totalx0generators_newpu1)
+                    self.Ybus0[0][0] = 1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11 + self.Zt12 + 1j * self.totalx0generators_newpu1)
 
                 elif Zt1_connection2 == "Delta":
-                    self.Zt11 = Zt1_value1 * 3 * (self.Zbase1) * (self.Sbase / nominalpower2)
+                    self.Zt11 = Zt1_value1 * 3 / self.Zbase1
                     self.Ybus0[0][1] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11)  # T1 Number
                     self.Ybus0[1][0] = 0  # T1
                     self.Ybus0[0][0] = 1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11 + 1j * self.totalx0generators_newpu1)
@@ -201,7 +202,7 @@ class SequenceNet:
             elif Zt1_connection1 == "Delta":
                 if Zt1_connection2 == "Grounded Wye":
                     print("Transformer 1: Delta to Grounded Wye")
-                    self.Zt12 = Zt1_value2 * 3 / (self.Zbasemain)
+                    self.Zt12 = Zt1_value2 * 3 / self.Zbasemain
                     self.Ybus0[0][1] = 0  # T1
                     self.Ybus0[1][0] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt12)  # T1  # T1
                     self.Ybus0[0][0] = 1 / (1j * self.totalx0generators_newpu1)
@@ -227,18 +228,18 @@ class SequenceNet:
             # Updating Ybus Depending on Transformer 1 Connection
             # Grounded Wye can go to Grounded Wye or Delta to not be 0
             if Zt2_connection1 == "Grounded Wye":
-                if Zt2_connection2 == "Grounded Wye":  # PU Stuff, Mainly voltages r confusing, convert the far bus to close voltage base???
-                    self.Zt21 = Zt2_value1 * 3 / (self.Zbase7) * (self.Sbase / nominalpower2)
-                    self.Zt22 = Zt2_value2 * 3 / (self.Zbasemain)
-                    self.Ybus0[6][5] = -1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt11)  # T2
+                if Zt2_connection2 == "Grounded Wye":
+                    self.Zt21 = Zt2_value1 * 3 / self.Zbase7
+                    self.Zt22 = Zt2_value2 * 3 / self.Zbasemain
+                    self.Ybus0[6][5] = -1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt21 + self.Zt22)  # T2
                     self.Ybus0[5][6] = self.Ybus0[6][5]
-                    self.Ybus0[6][6] = 1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt11 + 1j * self.totalx0generators_newpu2)
+                    self.Ybus0[6][6] = 1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt21 + self.Zt22 + 1j * self.totalx0generators_newpu2)
 
                 elif Zt2_connection2 == "Delta":
-                    self.Zt11 = Zt1_value1 * 3 / (self.Zbase1) * (self.Sbase / nominalpower2)
-                    self.Ybus0[6][5] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11)  # T2
+                    self.Zt21 = Zt2_value1 * 3 / self.Zbase7
+                    self.Ybus0[6][5] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt21)  # T2
                     self.Ybus0[5][6] = 0  # T2
-                    self.Ybus0[6][6] = 1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt11 + 1j * self.totalx0generators_newpu2)
+                    self.Ybus0[6][6] = 1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt21 + 1j * self.totalx0generators_newpu2)
 
                 elif Zt2_connection2 == "Ungrounded Wye":
                     self.Ybus0[6][5] = 0  # T2
@@ -253,10 +254,9 @@ class SequenceNet:
             elif Zt2_connection1 == "Delta":
                 if Zt2_connection2 == "Grounded Wye":
                     print("Transformer 2: Delta to Grounded Wye")
-                    self.Zt22 = Zt2_value2 * 3 / (self.Zbasemain)
+                    self.Zt22 = Zt2_value2 * 3 / self.Zbasemain
                     self.Ybus0[6][5] = 0  # T2
                     self.Ybus0[5][6] = -1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt22)  # T2
-                    print("self.Ybus0[5][6]", self.Ybus0[5][6])
                     self.Ybus0[6][6] = 1 / (1j * self.totalx0generators_newpu2)
 
                 elif Zt2_connection2 == "Delta" or Zt2_connection2 == "Ungrounded Wye":

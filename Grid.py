@@ -123,17 +123,6 @@ class Grid:
         self.Ybus[5][5] = -self.Ybus[3][5] - self.Ybus[4][5] - self.Ybus[5][6] + (1j * self.transmissionline["L4"].Bpu / 2) + 1j * self.transmissionline["L5"].Bpu / 2  # L4, L5, T2
         self.Ybus[6][6] = -self.Ybus[5][6]  # G2, T2
 
-        # Print the Y-bus matrix -> rechecked, correct
-        #print("Y-bus matrix:")
-        #i = 0
-        #while i < 7:
-        #    j = 0
-        #    print("\nRow " + str(i + 1))
-        #    while j < 7:
-        #      print(self.Ybus[i][j])
-        #      j += 1
-        #    i = i + 1
-
     # Store bus data from main
     def setBusData(self, bus: str, bustype: str,  real_P: float, Q_or_V: float):
         self.buses[bus].setbusdata(bustype, real_P, Q_or_V)
