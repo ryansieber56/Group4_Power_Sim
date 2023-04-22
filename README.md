@@ -4,6 +4,7 @@ The following Power Simulator is a simulation tool for modeling and analyzing po
 Files:
 Bus.py: This file implements the Bus class, which represents a bus in the power system.
 DC_Power_Flow_Solver.py: This file implements the DC Power FLow Solver, which solves the power flow equations for a DC power system.
+Documentation: This file is simply the documenation that describes the files in more detail for the user to better understand the program.
 Fast_Decoupled_Solver.py: This file implements the Fast Decoupled Power Flow Solver, which solves the power flow equations for an AC power system using the Fast Decoupled method.
 Fault_Calculation.py: This file implements the Fault Calculation class, which calculates fault currents and voltages in the power system.
 Generator.py: This file implements the Generator class, which represents a generator in the power sytem.
@@ -14,7 +15,7 @@ Sequence_Networks.py: This file implements the Sequence Networks class, which ca
 Transformer.py: This file implements the Transformer class, which represents a transformer in the power system.
 TransmissionLine.py: This file implements the TransmissionLine class, which represents a transmission line in the power system.
 TransmissionLineBundles.py: This file implements the TransmissionLineBundles class, which holds data on the type of transmission line is being used in the system.
-
+Zero_Impedance_Network.pdf: This file is a pdf drawing of the zero-impedance sequence network as described in Milestone 5 for project submission.
 Usage:
 To use the Power Simulator, you will need to install the following Python libraries: numpy, pandas, typing, sys, and math.
 Once installed, you can run the Main.py file script. There are preset simulator parameters that can be altered to the user's case, but they are there as an example of how the file can be used as a base case. A user will first create a Grid where everything will be stored. Generators and transformers will be added along with their bus location in the system. Transmission lines will then be added to connect the different buses together as desired. After the user is done adding componenets, the Ybus will be calculated. Bus data will then be set according to their types and desired parameters. Next, the user can select what type of Power Flow solver they would like to implement based by choosing either the Newton Rhapson, Fast Decoupled, or DC Power flow solver. Finally, the user can choose to solve the sequence networks and perform fault calculations if desired. Parameters of interest will be printed to the user's terminal.
