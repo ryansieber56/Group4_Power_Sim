@@ -8,8 +8,8 @@ class FaultCalculation:
         self.V_0 = np.zeros(self.length, dtype=complex)
         self.V_1 = np.zeros(self.length, dtype=complex)
         self.V_2 = np.zeros(self.length, dtype=complex)
-        self.V_012 = None
-        self.V_abc = None
+        self.V_012 = np.zeros((self.length, 3), dtype=complex)
+        self.V_abc = np.zeros((self.length, 3), dtype=complex)
         self.In_1 = None
         self.In_2 = None
         self.In_0 = None
@@ -56,17 +56,20 @@ class FaultCalculation:
         # Set I_012
         self.I_012 = np.array([[self.In_0], [self.In_1], [self.In_2]])
 
-        # Solve for all V_012 Values
+        # Solve for all V_012 Values and V-012
         for k in range(self.length):
             self.V_0[k] = -(SeqNet.Zbus0[k][faultlocation-1] * self.In_0)
             self.V_1[k] = self.VF - (SeqNet.Zbus1[k][faultlocation-1] * self.In_1)
             self.V_2[k] = -(SeqNet.Zbus2[k][faultlocation-1] * self.In_2)
-
-        # Set self.V_012
-        self.V_012 = np.array([[self.V_0], [self.V_1], [self.V_2]])
+            self.V_012[k] = np.array([[self.V_0[k]], [self.V_1[k]], [self.V_2[k]]]).flatten()
 
         # Calculate I_abc and V_abc
         self.I_abc = np.dot(self.A, self.I_012)
-        self.V_abc = np.dot(self.A, self.V_012)
-
-
+        for k in range(self.length):
+            self.V_abc[k] = np.dot(self.A, self.V_012[k])
+        print("\nI_abc")
+        for i in range(len(self.I_abc)):
+            print(self.I_abc[i])
+        print("\nAll V_abc")
+        for k in range(self.length):
+            print("V_abc[", k, "] = ", self.V_abc[k])

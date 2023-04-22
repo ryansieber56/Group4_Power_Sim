@@ -3,11 +3,32 @@ import numpy as np
 class SequenceNet:
 
     # Power flow
-    def __init__(self, Grid, x1generators: float, x2generators: float, x0generators: float, Zg1_grounding: str, Zg1_value:float, Zg2_grounding: str, Zg2_value:float, Zt1_connection1: str, Zt1_grounding1: str, Zt1_value1:float, Zt1_connection2: str, Zt1_grounding2: str, Zt1_value2:float, Zt2_connection1: str, Zt2_grounding1: str, Zt2_value1:float, Zt2_connection2: str, Zt2_grounding2: str, Zt2_value2:float):
-        # Per unit values for generator
-        self.x1generators_oldpu = x1generators
-        self.x2generators_oldpu = x2generators
-        self.x0generators_oldpu = x0generators
+    def __init__(self, Grid):
+        # Values for generator
+        self.x1generators_oldpu1 = Grid.generators["G1"].x1gen
+        self.x2generators_oldpu1 = Grid.generators["G1"].x2gen
+        self.x0generators_oldpu1 = Grid.generators["G1"].x0gen
+        self.x1generators_oldpu2 = Grid.generators["G2"].x1gen
+        self.x2generators_oldpu2 = Grid.generators["G2"].x2gen
+        self.x0generators_oldpu2 = Grid.generators["G2"].x0gen
+        Zg1_grounding = Grid.generators["G1"].grounding_type
+        Zg1_value = Grid.generators["G1"].grounding_value
+        Zg2_grounding = Grid.generators["G2"].grounding_type
+        Zg2_value = Grid.generators["G2"].grounding_value
+
+        # Transformer values
+        Zt1_connection1 = Grid.transformers["T1"].Zt_connection1
+        Zt1_grounding1 = Grid.transformers["T1"].Zt_grounding1
+        Zt1_value1 = Grid.transformers["T1"].Zt_value1
+        Zt1_connection2 = Grid.transformers["T1"].Zt_connection2
+        Zt1_grounding2 = Grid.transformers["T1"].Zt_grounding2
+        Zt1_value2 = Grid.transformers["T1"].Zt_value2
+        Zt2_connection1 = Grid.transformers["T2"].Zt_connection1
+        Zt2_grounding1 = Grid.transformers["T2"].Zt_grounding1
+        Zt2_value1 = Grid.transformers["T2"].Zt_value1
+        Zt2_connection2 = Grid.transformers["T2"].Zt_connection2
+        Zt2_grounding2 = Grid.transformers["T2"].Zt_grounding2
+        Zt2_value2 = Grid.transformers["T2"].Zt_value2
 
         # Establish Which Sequence Networks you want to create
         Generate_Zbus_0 = 1
@@ -40,8 +61,8 @@ class SequenceNet:
         if Generate_Zbus_1 == 1:
 
             # Switch Generators to System Per Unit Values instead of individual
-            self.x1generators_newpu1 = self.x1generators_oldpu * self.Sbase / nominalpower1
-            self.x1generators_newpu2 = self.x1generators_oldpu * self.Sbase / nominalpower2
+            self.x1generators_newpu1 = self.x1generators_oldpu1 * self.Sbase / nominalpower1
+            self.x1generators_newpu2 = self.x1generators_oldpu2 * self.Sbase / nominalpower2
 
             # Ybu1 is slightly modified Ybus from before
             self.Ybus1 = Grid.Ybus
@@ -53,7 +74,7 @@ class SequenceNet:
             self.Ybus1[6][6] = 1 / (Grid.transformers["T2"].Rpu + 1j * self.x1generators_newpu2 + 1j * Grid.transformers["T2"].Xpu)
 
             # Zbus1 is inverse of Ybus1
-            #self.Zbus1 = np.linalg.inv(self.Ybus1)
+            self.Zbus1 = np.linalg.inv(self.Ybus1)
             #print("Ybus1")
             #self.printmatrix(self.Ybus1)
             #print("Zbus1")
@@ -62,8 +83,8 @@ class SequenceNet:
         # Generate Zbus2 -> Negative Sequence
         if Generate_Zbus_2 == 1:
             # Switch Generators to System Per Unit Values instead of individual
-            self.x2generators_newpu1 = self.x2generators_oldpu * self.Sbase / nominalpower1
-            self.x2generators_newpu2 = self.x2generators_oldpu * self.Sbase / nominalpower2
+            self.x2generators_newpu1 = self.x2generators_oldpu1 * self.Sbase / nominalpower1
+            self.x2generators_newpu2 = self.x2generators_oldpu2 * self.Sbase / nominalpower2
 
             # Ybu2 is slightly modified Ybus from before
             self.Ybus2 = Grid.Ybus
@@ -107,10 +128,8 @@ class SequenceNet:
                 exit(-1)
 
             # Establish Generators, takes into account 3Zg as well -> Include in Ybus0 calculation
-            self.totalx0generators_newpu1 = (1j * self.x0generators_oldpu + 3 * self.Zg1 / self.Zbase1) * (self.Sbase / nominalpower1)
-            self.totalx0generators_newpu2 = (1j * self.x0generators_oldpu + 3 * self.Zg2 / self.Zbase7) * (self.Sbase / nominalpower2)
-            print("self.totalx0generators_newpu1",self.totalx0generators_newpu1, "self.x0generators_oldpu", self.x0generators_oldpu, "self.Zg1", self.Zg1, "self.Zbase1", self.Zbase1)
-            print("self.totalx0generators_newpu2", self.totalx0generators_newpu2, "self.x0generators_oldpu", self.x0generators_oldpu, "self.Zg2", self.Zg2, "self.Zbase2", self.Zbase7)
+            self.totalx0generators_newpu1 = (1j * self.x0generators_oldpu1 + 3 * self.Zg1 / self.Zbase1) * (self.Sbase / nominalpower1)
+            self.totalx0generators_newpu2 = (1j * self.x0generators_oldpu2 + 3 * self.Zg2 / self.Zbase7) * (self.Sbase / nominalpower2)
 
             # Transformer 1 Grounding Information, Side 1
             if Zt1_grounding1 == "Solid ground":
@@ -201,12 +220,12 @@ class SequenceNet:
             # Delta to Grounded Wye Only Non-Zero Combination
             elif Zt1_connection1 == "Delta":
                 if Zt1_connection2 == "Grounded Wye":
-                    print("Transformer 1: Delta to Grounded Wye")
+                    #print("Transformer 1: Delta to Grounded Wye")
                     self.Zt12 = Zt1_value2 * 3 / self.Zbasemain
                     self.Ybus0[0][1] = 0  # T1
                     self.Ybus0[1][0] = -1 / (3 * (Grid.transformers["T1"].Rpu + 1j * Grid.transformers["T1"].Xpu) + self.Zt12)  # T1  # T1
                     self.Ybus0[0][0] = 1 / (1j * self.totalx0generators_newpu1)
-                    print("self.totalx0generators_newpu1", self.totalx0generators_newpu1)
+                    #print("self.totalx0generators_newpu1", self.totalx0generators_newpu1)
                 elif Zt1_connection2 == "Delta" or Zt1_connection2 == "Ungrounded Wye":
                     self.Ybus0[0][1] = 0  # T1
                     self.Ybus0[1][0] = 0  # T1
@@ -253,7 +272,7 @@ class SequenceNet:
             # Delta to Grounded Wye Only Non-Zero Combination
             elif Zt2_connection1 == "Delta":
                 if Zt2_connection2 == "Grounded Wye":
-                    print("Transformer 2: Delta to Grounded Wye")
+                    #print("Transformer 2: Delta to Grounded Wye")
                     self.Zt22 = Zt2_value2 * 3 / self.Zbasemain
                     self.Ybus0[6][5] = 0  # T2
                     self.Ybus0[5][6] = -1 / (3 * (Grid.transformers["T2"].Rpu + 1j * Grid.transformers["T2"].Xpu) + self.Zt22)  # T2

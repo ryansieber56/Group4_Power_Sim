@@ -40,15 +40,16 @@ class Grid:
             self.buses_order.append(bus)
 
     # Function to add a transformer to the grid. It takes a name, initial bus, final bus, apparentpower (MVA),
-    # low side voltage rating (kV), high side voltage rating (kV), impedance (pu), and xrratio
+    # low side voltage rating (kV), high side voltage rating (kV), impedance (pu), xrratio, and grounding information
     def add_transformer(self, name: str, bus1: str, bus2: str, apparentpower: float,
-                        v1rated: float, v2rated: float, impedance: float, xrratio: float):
+                        v1rated: float, v2rated: float, impedance: float, xrratio: float,
+                        Zt_connection1: str, Zt_grounding1: str, Zt_value1: float, Zt_connection2: str, Zt_grounding2: str, Zt_value2: float):
 
-        # Check for errors before adding transformer
+        # Check for errors before adding transformer, Sequence Network data will only be checked if user needs a fault calculation
         self.error_check_transformer(bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio)
 
         # Add transformer to dictionary with all of its values
-        self.transformers[name] = Transformer(name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio, self.Sbase)
+        self.transformers[name] = Transformer(name, bus1, bus2, apparentpower, v1rated, v2rated, impedance, xrratio, self.Sbase, Zt_connection1, Zt_grounding1, Zt_value1, Zt_connection2, Zt_grounding2, Zt_value2)
 
         # Add the buses it is connected to
         self.__add_bus(bus1)
@@ -76,14 +77,14 @@ class Grid:
         self.__add_bus(bus1)
         self.__add_bus(bus2)
 
-    # Function to add a generator. It takes parameters name, initial bus, and nominal power (MVA).
-    def add_generator(self, name, bus1, nominalpower):
+    # Function to add a generator. Paramters are a name, bus, nominalpower (MVA), positive sequence impedance, negative sequence impedance, and the zero sequence impedance (per unit impedances)
+    def add_generator(self, name, bus1, nominalpower, x1gen, x2gen, x0gen, grounding_type, grounding_value):
 
         # Check for errors before adding generator
         self.error_check_generator(nominalpower)
 
         # Add generator to dictionary
-        self.generators[name] = Generator(name, bus1, nominalpower)
+        self.generators[name] = Generator(name, bus1, nominalpower, x1gen, x2gen, x0gen, grounding_type, grounding_value)
         self.__add_bus(bus1)
 
     # Function to calculate the Ybus. There are no input parameters, and it outputs the Ybus matrix.
