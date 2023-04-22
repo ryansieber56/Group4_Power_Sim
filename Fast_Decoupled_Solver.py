@@ -8,7 +8,7 @@ from Grid import Grid
 class FastDecoupled:
 
     # Fast Decoupled
-    def __init__(self, Grid):
+    def __init__(self, Grid, capacitor_bank):
 
         # Initial parameters that will be used later
         self.length = len(Grid.buses)
@@ -29,7 +29,7 @@ class FastDecoupled:
 
         # 1 is to use capacitor bank correction on an exceeded Var limit, 0 is to get rid
         # of "PV" status of the generator's bus
-        self.add_cap = 1
+        self.add_cap = capacitor_bank
 
         # Take the Q limit and convergence value from the Grid file
         self.Q_k_limit = Grid.Q_k_limit # In units of VA
@@ -89,7 +89,8 @@ class FastDecoupled:
         # Make sure convergence has not been met and that a capacitor bank was not just added, or that the max
         # Iterations has not been exceeded
         while (self.convergencemet == 0 and self.capacitor_bank_adjustment == 1) or iteration < 30:
-
+            J11 = np.zeros((self.length - 1, self.length - 1))
+            J22 = np.zeros((self.length - 1, self.length - 1))
             # Reset the calculated values every time through
             for i in range(self.length):
                 Parr[i] = 0
@@ -130,7 +131,6 @@ class FastDecoupled:
                     break
             # If convergence has been met and there was no capacitor adjustment, notify user it converged
             if self.convergencemet == 1 and self.capacitor_bank_adjustment == 0:
-                print("It converged after iteration ", iteration - 1)
                 break
 
             # Calculate Jacobian Matrix
@@ -166,8 +166,7 @@ class FastDecoupled:
                     else:
                         J11[i - skipterm, j - skipterm] = V[i] * abs(Grid.Ybus[i, j]) * V[j] * np.sin(
                             delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
-                        J22[i - skipterm, j - skipterm] = V[i] * abs(Grid.Ybus[i, j]) * np.sin(
-                            delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
+                        J22[i - skipterm, j - skipterm] = V[i] * abs(Grid.Ybus[i, j]) * np.sin(delta[i] - delta[j] - np.angle(Grid.Ybus[i, j]))
 
             # Delete Voltage Controlled bus 1 or 7, here if it is 7
             if self.slack_bus == 0:
@@ -220,7 +219,7 @@ class FastDecoupled:
 
             # If Q from VCB has exceeded the limit, and a capacitor bank is wanted
             if self.Q_k > self.Q_k_limit and self.add_cap == 1:
-                # Adjustment needed
+                # Adjustment Needed
                 print("LIMIT EXCEEDED, INCREASING CAPACITOR BANK")
                 self.capacitor_bank_adjustment = 1
                 # Add capacitor bank to highest MVAR load
@@ -228,8 +227,8 @@ class FastDecoupled:
                 for i in range(self.length):
                     if self.Q_given[j] >= self.Q_given[i]:
                         j = i
-                Grid.Ybus[j, j] += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
-                self.B += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
+                self.B += -1j * self.Q_given[j] * 100000000 / (self.Vbase ** 2) #* self.Sbase
+                Grid.Ybus[j, j] += self.B
 
                 # Reset iteration so that it does not exceed the iteration limit while adding banks
                 iteration = 0
@@ -454,7 +453,6 @@ class FastDecoupled:
                     break
 
             if self.convergencemet == 1:
-                print("It converged after iteration ", iteration - 1)
                 break
 
             # Calculate Jacobian Matrix
@@ -513,7 +511,6 @@ class FastDecoupled:
         # Setup V_complex
         for i in range(self.length):
             self.V_complex[i] = V[i] * np.cos(delta[i]) + 1j * V[i] * np.sin(delta[i])
-            print(self.V_complex[i])
 
     def check_ampacity(self):
         i = 1

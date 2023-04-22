@@ -10,7 +10,7 @@ from TransmissionLineBundles import TransmissionLineBundles
 class TransmissionLine:
 
     # By default, transmission line has a name, bus to bus location, length  (miles), coordinates for each phase,
-    # A codeword for the conductor type, number of bundles per phase, separation of bundles per phase, and voltage base
+    # A codeword for the conductor type, number of bundles per phase, separation of bundles per phase, Vbase, and Sbase
     def __init__(self, name: str, bus1: str, bus2: str, lengthmi: float,
                  axaxis: float, ayaxis: float, bxaxis: float, byaxis: float, cxaxis: float, cyaxis: float,
                  codeword: str, numberofbundles: int, seperationdistance: float, Vbase: float, Sbase: float):

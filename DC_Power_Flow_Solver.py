@@ -67,19 +67,17 @@ class DCPowerFlow:
         # Calculate the angle values by Bbus_inv * P_given
         self.delta = -1 * np.dot(self.Bbus_inv, temp_P_given)
 
-        #self.delta = [-4.264455*np.pi/180,-5.294268*np.pi/180,-4.562926*np.pi/180,-4.697326*np.pi/180,-3.791440*np.pi/180,2.203836*np.pi/180,]
-
         # Print angle and voltage information
-        for i in range(self.length-1):
-            print("Bus:", i+2, "delta:", self.delta[i]*180/np.pi, "voltage:", self.voltage_pu[i], "P_given:", P_given[i+1])
+        #for i in range(self.length-1):
+        #    print("Bus:", i+2, "delta:", self.delta[i]*180/np.pi, "voltage:", self.voltage_pu[i], "P_given:", P_given[i+1])
 
         # Calculate the complex voltage
         for i in range(self.length-1):
             self.V_complex[i] = self.voltage_pu[i] * np.cos(self.delta[i]) + 1j * self.voltage_pu[i] * np.sin(self.delta[i])
 
         self.V_complex = np.insert(self.V_complex, self.slack_bus, 1)
-        for i in range(self.length):
-            print("V_complex for bus", i+1, ":", self.V_complex[i])
+        #for i in range(self.length):
+        #    print("V_complex for bus", i+1, ":", self.V_complex[i])
 
         # Solve for Powers, Currents, and other important values and print them out
         self.solve_power_flow(Grid)
@@ -92,9 +90,7 @@ class DCPowerFlow:
         # Going from the smaller bus to the larger bus
         for i in range(self.length):
             for j in range(self.length):
-                if j <= i:
-                    continue
-                I_values_per_unit[i, j] = (self.V_complex[j] - self.V_complex[i]) * (self.Bbus_whole[i, j])
+                I_values_per_unit[i, j] = -(self.V_complex[j] - self.V_complex[i]) * (self.Bbus_whole[i, j])
 
         # Calculate actual current values
         self.I_values = (self.Sbase / (self.Vbase * np.sqrt(3))) * I_values_per_unit
@@ -106,58 +102,51 @@ class DCPowerFlow:
         # Take voltage values out of per unit
         self.V_complex *= self.Vbase
 
-        # Set the conjugate of I
-        I_conjugate = np.conjugate(self.I_values)
-
-        # Set up to find P and Q
-        # Find P, S = P + jQ, and S = I_conjugate * V * sqrt(3)
-        for i in range(self.length):
-            for j in range(self.length):
-                self.S_values[i, j] = self.V_complex[i] * I_conjugate[i, j] * np.sqrt(3)  # because 3 phase
-                # if self.slack_bus == 0 and i == 0:
-                # For the first bus, the current has a different base
-                if i == 0:
-                    self.S_values[i, j] = self.S_values[i, j] / self.V_complex[i] * self.Vbase_slack1
-                # if self.slack_bus == 6 and i == 6:
-                #    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack2
-
-        # Moving forward is wrong
-
-        self.P_values = self.S_values
-        #self.P_values = abs(self.S_values)
-        #self.P_values = np.zeros(self.length)
-        #for i in range(self.length):
-         #   for j in range(self.length):
-          #      self.P_values[i] += self.Bbus_whole[i,j] * (self.V_complex[j] - self.V_complex[i])  # because 3 phase
-                # if self.slack_bus == 0 and i == 0:
-                #if i == 0:
-                #    self.P_values[i, j] = self.P_values[i, j] / self.V_complex[i] * self.Vbase_slack1
-
-        # POWER INJECTIONS FOR SLACK
-        #for i in range(self.length):
-        #    self.P_inj_slack += self.Bbus_whole[self.slack_bus, i] * self.V_complex[i] / self.Vbase
-        #self.P_inj_slack *= abs(self.V_complex[self.slack_bus]) / self.Vbase * self.Sbase
+        # Set up to find P
         self.P_inj_slack = 0
         for i in range(self.length):
             self.P_inj_slack += self.P_given[i]
-        self.P_inj_slack = self.P_inj_slack * 100
-        print("self.P_inj_slack:", abs(self.P_inj_slack), "MW")
+        self.P_inj_slack = -self.P_inj_slack * 100
+        print("self.P_inj_slack:", self.P_inj_slack, "MW")
 
-        # Write to Excel file/ Print
+        I_conjugate = np.conjugate(self.I_values)
+        for i in range(self.length):
+            for j in range(self.length):
+                self.S_values[i, j] = self.V_complex[i] * I_conjugate[i, j] * np.sqrt(3)  # because 3 phase
+                # Transformer has different base
+                if i==0:
+                    self.S_values[i, j] = self.S_values[i, j]/self.V_complex[i] * self.Vbase_slack1
+
         # Print Values
+        P = abs(self.S_values)
+        P[0, 1] = self.P_inj_slack*1000000
+        P[1, 0] = self.P_inj_slack*1000000
+
         print("\nI_Values")
         for i in range(self.length):
             for j in range(self.length):
-                if abs(self.I_values[i, j]) == 0:
+                if abs(self.I_values[i, j]) == 0 or self.I_values[i, j] < 0:
+                    continue
+                # Only print Line currents
+                if i == 0 or j == 0 or i == 6 or j == 6:
                     continue
                 print("B" + str(i + 1) + " to B" + str(j + 1) + " ", abs(self.I_values[i, j]))
 
-        print("\nP_values")
+        # Print the P values from the Sending End, meaning they are positive
+        print("\nP_values Sending End")
         for i in range(self.length):
             for j in range(self.length):
-                if abs(self.P_values[i, j]) == 0:
+                if abs(P[i, j]) == 0 or np.imag(self.S_values[i,j]) > 0:
                     continue
-                print("Bus" + str(i + 1) + " to Bus" + str(j + 1) + " ", self.P_values[i, j] / 1000000, "MW")
+                print("Bus" + str(i + 1) + " to Bus" + str(j + 1) + " ", P[i, j] / 1000000, "MW")
+
+        # Print the P values from the Receiving End, meaning they are negative
+        print("\nP_values Receiving End")
+        for i in range(self.length):
+            for j in range(self.length):
+                if abs(P[i, j]) == 0 or np.imag(self.S_values[i,j]) < 0:
+                    continue
+                print("Bus" + str(i + 1) + " from Bus" + str(j + 1) + " ", P[i, j] / 1000000, "MW")
 
     def check_ampacity(self):
         i = 1

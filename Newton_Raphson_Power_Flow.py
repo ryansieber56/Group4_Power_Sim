@@ -8,9 +8,11 @@ from Grid import Grid
 class NewtonRhapson:
 
     # Power flow
-    def __init__(self, Grid):
+    def __init__(self, Grid, capacitor_bank):
         # add_cap is set so that 1 will add capacitor bank to lower generator MVAR, 0 to solve exceeded limit function
-        self.add_cap = 1
+        # from user input
+        self.add_cap = capacitor_bank
+
         # B will be the capactitor bank added
         self.B = 0
         # Start on iteration 1
@@ -121,7 +123,6 @@ class NewtonRhapson:
                     break
             # If convergence has been met and there was no capacitor adjustment, notify user it converged
             if self.convergencemet == 1 and self.capacitor_bank_adjustment == 0:
-                print("It converged after iteration ", iteration - 1)
                 break
 
             # Calculate Jacobian Matrix
@@ -243,8 +244,8 @@ class NewtonRhapson:
                 for i in range(self.length):
                     if self.Q_given[j] >= self.Q_given[i]:
                         j = i
-                Grid.Ybus[j, j] += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
-                self.B += -1j * self.Q_given[j] * self.Sbase/ (self.Vbase ** 2)
+                self.B += -1j * self.Q_given[j] * 100000000 / (self.Vbase ** 2) #* self.Sbase
+                Grid.Ybus[j, j] += self.B
 
                 # Reset iteration so that it does not exceed the iteration limit while adding banks
                 iteration = 0
@@ -467,7 +468,6 @@ class NewtonRhapson:
                     break
 
             if self.convergencemet == 1:
-                print("It converged after iteration ", iteration - 1)
                 break
 
             # Calculate Jacobian Matrix
