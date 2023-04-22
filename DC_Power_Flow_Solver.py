@@ -162,17 +162,3 @@ class DCPowerFlow:
                 j += 1
             j = 0
             i += 1
-
-#Milestone 4: Var Limits and Different Solvers
-#Due March 29th
-#• Implement var limits in your program so that your second generator
-#does not exceed 175 Mvar
-#• Raise the vars on Bus 4 until the var control is used for the
-#generator on Bus 7. Report the bus voltages and angles.
-#• Implement a capacitor bank and place it until the generator is in
-#voltage control
-
-##• Implement a fast decoupled solver and compare the iterations
-#versus those from the full Newton Raphson
-#• Implement the DC power flow solver
-#• Compare the voltages for all three solvers described above
