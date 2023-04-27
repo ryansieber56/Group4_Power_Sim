@@ -17,7 +17,7 @@ MainGrid.add_generator("G2", "Bus7", 100, 0.12, 0.14, 0.05, "Resistor", 1)
 # Add Transformers, Paramters: name, Starting Bus, Ending Bus, Apparentpower (MVAR), v1rated, v2rated, impedance,
 # xrratio, Connection 1 type, Grounding type, Value of grounding, Connection 2 type, Grounding type, Value of grounding
 MainGrid.add_transformer("T1", "Bus1", "Bus2", 125, 20, 230, 0.085, 10, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)
-MainGrid.add_transformer("T2", "Bus7", "Bus6", 200, 18, 230, 0.105, 12, "Delta", "N/A", 0, "Grounded Wye", "Resistor", 1)
+MainGrid.add_transformer("T2", "Bus7", "Bus6", 200, 18, 230, 0.105, 12, "Delta", "N/A", 0, "Ungrounded Wye", "Ungrounded", 0)
 
 # Add Transmission Line Connections
 # Parameters: name, bus to bus location, length  (miles), coordinates for each phase, codeword for the conductor type,
