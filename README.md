@@ -1,5 +1,5 @@
 # Group 4 Power Sim
-The following Power Simulator is a simulation tool for modeling and analyzing power systems. The following tool only works for a 7 bus system. A generator will be placed on bus's 1 and 7, where the slack bus can be set as either of those buses. The simulator is written in Python scripts using Python version 3.7. Each script implements various components of the power system. There are 12 important files in this directory, however the user will not interact with every one. The following lists an overview of the files in the repository.
+The following Power Simulator is a simulation tool for modeling and analyzing power systems. The following tool only works for a 7 bus system. A generator will be placed on bus's 1 and 7, where the slack bus can be set as either of those buses. The simulator is written in Python scripts using Python version 3.7. Each script implements various components of the power system. There are 15 important files in this directory, however the user will not interact with every one. The following lists an overview of the files in the repository.
 
 Files:
 * Bus.py: This file implements the Bus class, which represents a bus in the power system.
