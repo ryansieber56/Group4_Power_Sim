@@ -4,7 +4,8 @@ The following Power Simulator is a simulation tool for modeling and analyzing po
 Files:
 * Bus.py: This file implements the Bus class, which represents a bus in the power system.
 * DC_Power_Flow_Solver.py: This file implements the DC Power FLow Solver, which solves the power flow equations for a DC power system.
-* Documentation: This file is simply the documenation that describes the files in more detail for the user to better understand the program.
+* Group 4 Simulator Documentation.docx: This file is simply the documenation that describes the files in more detail for the user to better understand the program in a Word document format.
+* Group 4 Simulator Documentation.pdf: This is the same information that is in the Group 4 Simulator Documentation.docx file, just in pdf format.
 * Fast_Decoupled_Solver.py: This file implements the Fast Decoupled Power Flow Solver, which solves the power flow equations for an AC power system using the Fast Decoupled method.
 * Fault_Calculation.py: This file implements the Fault Calculation class, which calculates fault currents and voltages in the power system.
 * Generator.py: This file implements the Generator class, which represents a generator in the power sytem.
